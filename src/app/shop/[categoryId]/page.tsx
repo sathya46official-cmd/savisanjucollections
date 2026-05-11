@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import ShopGridClient from "@/components/ShopGridClient";
 import { Metadata } from "next";
 
@@ -93,13 +94,13 @@ export default async function ShopCategoryPage(
             />
             {/* Elegant Header */}
             <header className="w-full py-8 border-b border-[#EAE6D9] bg-white sticky top-0 z-40 flex items-center justify-between px-8 md:px-16">
-                <a href="/" className="text-2xl font-serif tracking-widest text-[#1A1A1A]">
+                <Link href="/" className="text-2xl font-serif tracking-widest text-[#1A1A1A]">
                     SaviSanju<span className="text-[#8C8776]">Collections</span>
-                </a>
+                </Link>
                 <nav className="hidden md:flex gap-8 text-sm uppercase tracking-widest text-[#5C584E]">
-                    <a href="/" className="hover:text-[#1A1A1A] transition-colors">Home</a>
-                    <a href="/shop" className="text-[#1A1A1A]">Sarees</a>
-                    <a href="/auth" className="hover:text-[#1A1A1A] transition-colors">Account</a>
+                    <Link href="/" className="hover:text-[#1A1A1A] transition-colors">Home</Link>
+                    <Link href="/shop" className="text-[#1A1A1A]">Sarees</Link>
+                    <Link href="/auth" className="hover:text-[#1A1A1A] transition-colors">Account</Link>
                 </nav>
             </header>
 

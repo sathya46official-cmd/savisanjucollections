@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
@@ -171,8 +172,8 @@ export default function HeroCanvas() {
                 </div>
                 <nav className="hidden md:flex gap-8 text-xs uppercase tracking-[0.3em]">
                     <a href="#collections" className="hover:text-white/70 transition-colors">Collections</a>
-                    <a href="/shop" className="hover:text-white/70 transition-colors">Sarees</a>
-                    <a href="/auth" className="hover:text-white/70 transition-colors">Account</a>
+                    <Link href="/shop" className="hover:text-white/70 transition-colors">Sarees</Link>
+                    <Link href="/auth" className="hover:text-white/70 transition-colors">Account</Link>
                 </nav>
             </header>
 
