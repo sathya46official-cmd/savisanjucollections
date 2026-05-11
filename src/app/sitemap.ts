@@ -23,7 +23,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     // Dynamic product category pages
     const response = await fetch(`${API_URL}/api/products`, { 
-      next: { revalidate: 3600 } // revalidate every hour
+      next: { revalidate: 3600 }, // revalidate every hour
+      signal: AbortSignal.timeout(5000) // 5 second timeout — don't block build if API is down
     });
     
     if (response.ok) {

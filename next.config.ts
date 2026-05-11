@@ -1,24 +1,33 @@
 import type { NextConfig } from "next";
 
+// Build the list of allowed image hostnames dynamically
+type RemotePattern = { protocol: "http" | "https"; hostname: string; port?: string; pathname?: string };
+
+const remotePatterns: RemotePattern[] = [
+  {
+    // Local development backend
+    protocol: "http",
+    hostname: "localhost",
+    port: "5000",
+    pathname: "/uploads/**",
+  },
+];
+
+// Only add the production VPS pattern if the hostname is actually configured
+const vpsHostname = process.env.NEXT_PUBLIC_API_HOSTNAME;
+if (vpsHostname && vpsHostname !== "localhost" && vpsHostname !== "your-oracle-vps-domain.com") {
+  remotePatterns.push({
+    protocol: "https",
+    hostname: vpsHostname,
+    pathname: "/uploads/**",
+  });
+}
+
 const nextConfig: NextConfig = {
   // Allow images from the Express backend (local dev + production VPS)
-  // TODO: Set NEXT_PUBLIC_API_HOSTNAME environment variable to your Oracle VPS domain before deploying
+  // Set NEXT_PUBLIC_API_HOSTNAME in Vercel env vars once you have your Oracle VPS domain
   images: {
-    remotePatterns: [
-      {
-        // Local development backend
-        protocol: "http",
-        hostname: "localhost",
-        port: "5000",
-        pathname: "/uploads/**",
-      },
-      {
-        // Production Oracle VPS — reads from NEXT_PUBLIC_API_HOSTNAME env var
-        protocol: "https",
-        hostname: process.env.NEXT_PUBLIC_API_HOSTNAME || "your-oracle-vps-domain.com",
-        pathname: "/uploads/**",
-      },
-    ],
+    remotePatterns,
     formats: ["image/avif", "image/webp"],
   },
 
