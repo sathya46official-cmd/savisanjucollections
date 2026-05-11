@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Test files — they use `any` types intentionally for mocking
+    "src/__tests__/**",
   ]),
 ]);
 

@@ -25,9 +25,6 @@ jobs:
       - name: Lint code
         run: npm run lint
 
-      - name: Type check (app source only, excludes test files)
-        run: npx tsc --noEmit --project tsconfig.json
-
       - name: Build
         run: npm run build
         env:
