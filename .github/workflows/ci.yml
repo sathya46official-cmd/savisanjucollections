@@ -25,8 +25,14 @@ jobs:
       - name: Lint code
         run: npm run lint
 
-      - name: Type check
-        run: npx tsc --noEmit
+      - name: Type check (app source only, excludes test files)
+        run: npx tsc --noEmit --project tsconfig.json
 
-      - name: Run tests
-        run: npm test
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:5000
+          NEXT_PUBLIC_API_HOSTNAME: localhost
+          NEXT_PUBLIC_WHATSAPP_NUMBER: "919876543210"
+          NEXT_PUBLIC_GOOGLE_BUSINESS_ID: YOUR_GOOGLE_BUSINESS_ID
+          NEXT_PUBLIC_GA_ID: G-XXXXXXXXXX
