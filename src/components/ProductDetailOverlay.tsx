@@ -134,6 +134,7 @@ export default function ProductDetailOverlay({
                         src={activeVariant?.image_url} 
                         alt={`${product.name} - ${activeVariant?.color_name}`} 
                         className="h-full w-auto object-contain drop-shadow-2xl transition-all duration-700 ease-in-out"
+                        loading="lazy"
                     />
                 </div>
 
@@ -149,7 +150,12 @@ export default function ProductDetailOverlay({
                                     className={`relative rounded-full w-16 h-16 flex flex-col items-center justify-center gap-2 transition overflow-visible group`}
                                 >
                                     <div className={`w-12 h-12 rounded-full overflow-hidden border-2 transition-all ${activeVariantIdx === idx ? 'border-white scale-110 drop-shadow-lg' : 'border-transparent opacity-60 group-hover:opacity-100'}`}>
-                                        <img src={v.image_url} alt={v.color_name} className="w-full h-full object-cover" />
+                                        <img 
+                                            src={v.image_url} 
+                                            alt={v.color_name} 
+                                            className="w-full h-full object-cover"
+                                            loading="lazy"
+                                        />
                                     </div>
                                     <span className="absolute -bottom-6 text-xs whitespace-nowrap opacity-60 font-light tracking-wide">{v.color_name}</span>
                                 </button>

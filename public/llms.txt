@@ -1,0 +1,38 @@
+# SaviSanju Collections
+
+> Premium handwoven Kanjivaram and Banarasi sarees. Authentic luxury sarees with pan-India delivery.
+
+## About
+
+SaviSanju Collections is an Indian luxury saree boutique specialising in authentic handwoven silk sarees.
+We offer Kanjivaram, Banarasi, Crape Silk, and Tussar sarees directly to customers across India.
+Prices are negotiable. Payment via COD or UPI after delivery confirmation.
+
+## Products
+
+- Kanjivaram Sarees – Traditional South Indian silk sarees, handwoven in Kanchipuram
+- Banarasi Sarees – Handwoven silk sarees from Varanasi with zari work
+- Crape Silk Sarees – Lightweight silk sarees with a crinkled texture
+- Tussar Sarees – Natural wild silk sarees with a rich texture
+
+## Key Pages
+
+- Homepage: https://savisanjucollections.vercel.app/
+- Shop All Sarees: https://savisanjucollections.vercel.app/shop
+- Contact: support@savisanju.com
+
+## Pricing
+
+All prices are in Indian Rupees (INR). Prices are negotiable — our team contacts customers to confirm
+the final price before processing. Typical price range: ₹1,500 – ₹3,500 per saree.
+
+## Delivery
+
+- Pan-India delivery
+- Estimated delivery: 5–6 business days
+- Payment: COD or UPI after satisfaction
+
+## Contact
+
+- Email: support@savisanju.com
+- WhatsApp: Available (see website)

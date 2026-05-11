@@ -1,189 +1,501 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
+import { Suspense, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Eye, EyeOff, Loader2, Mail, Lock, User, Phone, CheckCircle2, XCircle } from "lucide-react";
 
-export default function AuthPage() {
-    const router = useRouter();
-    const searchParams = useSearchParams();
+// Backend API URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+// Password strength levels
+type PasswordStrength = 'weak' | 'medium' | 'strong';
+
+// Form mode
+type FormMode = 'login' | 'register';
+
+function AuthForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/';
+
+  // Form state
+  const [mode, setMode] = useState<FormMode>('login');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  // Login form
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
+  // Register form
+  const [registerName, setRegisterName] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPhone, setRegisterPhone] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+
+  // Password strength
+  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>('weak');
+
+  /**
+   * Calculate password strength
+   */
+  useEffect(() => {
+    const password = mode === 'register' ? registerPassword : '';
     
-    // Check if user came from clicking 'Shop Now'
-    const returnTo = searchParams.get('returnTo');
-    const autoCheckoutVariant = searchParams.get('variantId');
-
-    const [isLogin, setIsLogin] = useState(true);
-    const [loading, setLoading] = useState(false);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState<string | null>(null);
-    const [sessionUser, setSessionUser] = useState<any>(null);
-
-    // If user is already logged in, send them back OR show their profile
-    useEffect(() => {
-        const checkUser = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                if (returnTo) {
-                    // They came from a checkout flow, auto-redirect back to finish checkout
-                    const dest = autoCheckoutVariant ? `${returnTo}?checkout=${autoCheckoutVariant}` : returnTo;
-                    router.push(dest);
-                } else {
-                    // They clicked 'Account' in the header while already logged in
-                    setSessionUser(session.user);
-                }
-            }
-        };
-        checkUser();
-    }, [returnTo, autoCheckoutVariant, router]);
-
-    const handleRedirect = () => {
-        if (returnTo) {
-            const dest = autoCheckoutVariant ? `${returnTo}?checkout=${autoCheckoutVariant}` : returnTo;
-            router.push(dest);
-        } else {
-            router.push('/');
-        }
-    };
-
-    const handleAuth = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        setError(null);
-
-        try {
-            if (isLogin) {
-                const { error: authError } = await supabase.auth.signInWithPassword({
-                    email,
-                    password,
-                });
-                if (authError) throw authError;
-                handleRedirect();
-            } else {
-                const { error: authError } = await supabase.auth.signUp({
-                    email,
-                    password,
-                });
-                if (authError) throw authError;
-                
-                alert("Registration successful! You are now securely logged in.");
-                handleRedirect();
-            }
-        } catch (err: any) {
-            setError(err.message || 'An error occurred during authentication.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleSignOut = async () => {
-        await supabase.auth.signOut();
-        setSessionUser(null);
-    };
-
-    // --- Authenticated View ---
-    if (sessionUser) {
-        return (
-            <div className="min-h-screen bg-[#F4F2EC] flex flex-col justify-center items-center p-4">
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl md:text-5xl font-serif text-[#1A1A1A]">SaviSanju<span className="font-light">Collections</span></h1>
-                </div>
-
-                <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100 text-center">
-                    <h2 className="text-2xl font-serif mb-2 text-gray-900 border-b pb-4">Your Account</h2>
-                    <p className="text-gray-500 mb-8 mt-4 tracking-widest text-sm">{sessionUser.email}</p>
-                    
-                    <button 
-                        onClick={() => router.push('/')}
-                        className="w-full bg-black text-white py-3.5 mb-3 rounded-md font-medium tracking-widest text-sm hover:bg-gray-800 transition uppercase"
-                    >
-                        Continue Shopping
-                    </button>
-                    
-                    <button 
-                        onClick={handleSignOut}
-                        className="w-full bg-transparent border border-black text-black py-3.5 rounded-md font-medium tracking-widest text-sm hover:bg-gray-50 transition uppercase"
-                    >
-                        Sign Out
-                    </button>
-                </div>
-            </div>
-        );
+    if (password.length === 0) {
+      setPasswordStrength('weak');
+      return;
     }
 
-    // --- Unauthenticated View ---
-    return (
-        <div className="min-h-screen bg-[#F4F2EC] flex flex-col justify-center items-center p-4">
-            
-            <div className="text-center mb-8">
-                <h1 className="text-3xl md:text-5xl font-serif text-[#1A1A1A]">SaviSanju<span className="font-light">Collections</span></h1>
-                <p className="text-gray-500 mt-2 font-light tracking-wide">
-                    {returnTo ? "Log in or register to secure your saree." : "Welcome back to elegance."}
-                </p>
-            </div>
+    let strength = 0;
+    
+    // Length check
+    if (password.length >= 8) strength++;
+    if (password.length >= 12) strength++;
+    
+    // Character variety checks
+    if (/[a-z]/.test(password)) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[0-9]/.test(password)) strength++;
+    if (/[^a-zA-Z0-9]/.test(password)) strength++;
 
-            <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100">
-                <h2 className="text-2xl font-serif text-center mb-6 text-gray-900 border-b pb-4">
-                    {isLogin ? "Secure Login" : "Create Account"}
-                </h2>
-                
-                <form onSubmit={handleAuth} className="flex flex-col gap-4">
-                    {error && (
-                        <div className="p-3 bg-red-50 text-red-600 text-sm rounded-md border border-red-100">
-                            {error}
-                        </div>
-                    )}
+    if (strength <= 2) {
+      setPasswordStrength('weak');
+    } else if (strength <= 4) {
+      setPasswordStrength('medium');
+    } else {
+      setPasswordStrength('strong');
+    }
+  }, [registerPassword, mode]);
 
-                    <div className="space-y-1">
-                        <label className="text-sm font-medium text-gray-700">Email Address</label>
-                        <input 
-                            type="email" 
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full border border-gray-200 px-4 py-3 rounded-md outline-none focus:ring-2 focus:ring-black bg-gray-50/50 text-black placeholder-gray-400"
-                            placeholder="you@email.com"
-                        />
-                    </div>
-                    
-                    <div className="space-y-1">
-                        <label className="text-sm font-medium text-gray-700">Password</label>
-                        <input 
-                            type="password" 
-                            required
-                            minLength={6}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full border border-gray-200 px-4 py-3 rounded-md outline-none focus:ring-2 focus:ring-black bg-gray-50/50 text-black placeholder-gray-400"
-                            placeholder="••••••••"
-                        />
-                    </div>
+  /**
+   * Handle login
+   */
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
 
-                    <button 
-                        type="submit" 
-                        disabled={loading}
-                        className="w-full bg-black text-white py-3.5 mt-2 rounded-md font-medium hover:bg-gray-800 transition disabled:opacity-70"
-                    >
-                        {loading ? "Processing Securely..." : (isLogin ? "Sign In" : "Register Securely")}
-                    </button>
-                </form>
+    // Validation
+    if (!loginEmail || !loginPassword) {
+      setError('Please fill in all fields');
+      return;
+    }
 
-                <div className="mt-6 text-center text-sm">
-                    <button 
-                        onClick={() => setIsLogin(!isLogin)}
-                        className="text-gray-500 hover:text-black transition"
-                    >
-                        {isLogin ? "New to SaviSanju? Create an account" : "Already registered? Sign in securely"}
-                    </button>
-                </div>
-            </div>
-            
-            <button 
-                onClick={() => router.push('/')}
-                className="mt-8 text-sm text-gray-400 hover:text-black transition underline underline-offset-4"
-            >
-                Return to Collection
-            </button>
+    try {
+      setLoading(true);
+
+      const response = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          email: loginEmail,
+          password: loginPassword
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed');
+      }
+
+      // Success - redirect
+      setSuccess('Login successful! Redirecting...');
+      setTimeout(() => {
+        router.push(redirectTo);
+      }, 1000);
+
+    } catch (error: any) {
+      console.error('Login error:', error);
+      setError(error.message || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Handle register
+   */
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    // Validation
+    if (!registerName || !registerEmail || !registerPhone || !registerPassword) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    if (registerPassword.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(registerEmail)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    if (!/^\d{10}$/.test(registerPhone)) {
+      setError('Please enter a valid 10-digit phone number');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const response = await fetch(`${API_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: registerName,
+          email: registerEmail,
+          phone: registerPhone,
+          password: registerPassword
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Registration failed');
+      }
+
+      // Success - show verification message
+      setSuccess('Registration successful! Please check your email to verify your account.');
+      
+      // Clear form
+      setRegisterName('');
+      setRegisterEmail('');
+      setRegisterPhone('');
+      setRegisterPassword('');
+
+      // Switch to login after 3 seconds
+      setTimeout(() => {
+        setMode('login');
+        setSuccess(null);
+      }, 3000);
+
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      setError(error.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Toggle form mode
+   */
+  const toggleMode = () => {
+    setMode(mode === 'login' ? 'register' : 'login');
+    setError(null);
+    setSuccess(null);
+  };
+
+  /**
+   * Get password strength color
+   */
+  const getPasswordStrengthColor = (): string => {
+    switch (passwordStrength) {
+      case 'weak':
+        return 'bg-red-500';
+      case 'medium':
+        return 'bg-yellow-500';
+      case 'strong':
+        return 'bg-green-500';
+    }
+  };
+
+  /**
+   * Get password strength width
+   */
+  const getPasswordStrengthWidth = (): string => {
+    switch (passwordStrength) {
+      case 'weak':
+        return 'w-1/3';
+      case 'medium':
+        return 'w-2/3';
+      case 'strong':
+        return 'w-full';
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F4F2EC] flex items-center justify-center py-12 px-4">
+      <div className="max-w-md w-full">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-serif text-gray-900 mb-2">
+            {mode === 'login' ? 'Welcome Back' : 'Create Account'}
+          </h1>
+          <p className="text-gray-600">
+            {mode === 'login' 
+              ? 'Sign in to your account to continue' 
+              : 'Join us to start shopping luxury sarees'}
+          </p>
         </div>
-    );
+
+        {/* Form Card */}
+        <div className="bg-white rounded-lg shadow-sm p-8">
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+              <XCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
+
+          {/* Success Message */}
+          {success && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+              <CheckCircle2 size={20} className="text-green-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-green-800">{success}</p>
+            </div>
+          )}
+
+          {/* Login Form */}
+          {mode === 'login' && (
+            <form onSubmit={handleLogin} className="space-y-6">
+              {/* Email */}
+              <div>
+                <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="login-email"
+                    type="email"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    placeholder="you@example.com"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <label htmlFor="login-password" className="block text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="login-password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  'Sign In'
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* Register Form */}
+          {mode === 'register' && (
+            <form onSubmit={handleRegister} className="space-y-6">
+              {/* Name */}
+              <div>
+                <label htmlFor="register-name" className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <User size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="register-name"
+                    type="text"
+                    value={registerName}
+                    onChange={(e) => setRegisterName(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    placeholder="John Doe"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Email */}
+              <div>
+                <label htmlFor="register-email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="register-email"
+                    type="email"
+                    value={registerEmail}
+                    onChange={(e) => setRegisterEmail(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    placeholder="you@example.com"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label htmlFor="register-phone" className="block text-sm font-medium text-gray-700 mb-2">
+                  Phone Number
+                </label>
+                <div className="relative">
+                  <Phone size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="register-phone"
+                    type="tel"
+                    value={registerPhone}
+                    onChange={(e) => setRegisterPhone(e.target.value.replace(/\D/g, ''))}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    placeholder="9876543210"
+                    maxLength={10}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <label htmlFor="register-password" className="block text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="register-password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={registerPassword}
+                    onChange={(e) => setRegisterPassword(e.target.value)}
+                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+
+                {/* Password Strength Indicator */}
+                {registerPassword.length > 0 && (
+                  <div className="mt-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div className={`h-full ${getPasswordStrengthColor()} ${getPasswordStrengthWidth()} transition-all duration-300`} />
+                      </div>
+                      <span className="text-xs font-medium text-gray-600 capitalize">
+                        {passwordStrength}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Use 8+ characters with uppercase, lowercase, numbers, and symbols
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  'Create Account'
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* Toggle Mode */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}
+              {' '}
+              <button
+                type="button"
+                onClick={toggleMode}
+                className="text-gray-900 font-medium hover:underline"
+              >
+                {mode === 'login' ? 'Sign up' : 'Sign in'}
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AuthFormFallback() {
+  return (
+    <div className="min-h-screen bg-[#F4F2EC] flex items-center justify-center py-12 px-4">
+      <div className="max-w-md w-full">
+        <div className="text-center mb-8">
+          <div className="h-8 w-32 bg-gray-200 animate-pulse mx-auto mb-2 rounded" />
+          <div className="h-4 w-48 bg-gray-200 animate-pulse mx-auto rounded" />
+        </div>
+        <div className="bg-white rounded-lg shadow-sm p-8">
+          <div className="space-y-6">
+            <div className="h-12 bg-gray-100 rounded-lg" />
+            <div className="h-12 bg-gray-100 rounded-lg" />
+            <div className="h-12 bg-gray-900 rounded-lg" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={<AuthFormFallback />}>
+      <AuthForm />
+    </Suspense>
+  );
 }

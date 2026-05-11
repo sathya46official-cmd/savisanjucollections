@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, CheckCircle } from "lucide-react";
-import { supabase } from "@/lib/supabase/client";
+import { apiClient } from "@/lib/api/client";
 import { useRouter } from "next/navigation";
 
 interface Variant {
@@ -29,107 +29,99 @@ interface CheckoutModalProps {
 export default function CheckoutModal({ isOpen, product, variant, onClose }: CheckoutModalProps) {
     const router = useRouter();
     
-    const [user, setUser] = useState<any>(null);
     const [address, setAddress] = useState("");
     const [mobile, setMobile] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
     const [orderId, setOrderId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!isOpen) return;
 
-        const checkAuthAndProfile = async () => {
-            setIsCheckingAuth(true);
-            const { data: { session } } = await supabase.auth.getSession();
-            
-            if (!session) {
-                // Allow Guest Checkout
-                setIsCheckingAuth(false);
-                return;
+        // Check authentication when modal opens
+        const checkAuth = async () => {
+            try {
+                // Call backend to verify auth token (httpOnly cookie)
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/auth/verify`, {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    // Not authenticated - close modal and redirect to login
+                    onClose();
+                    
+                    // Save current page URL to redirect back after login
+                    const currentUrl = window.location.pathname + window.location.search;
+                    router.push(`/auth?redirect=${encodeURIComponent(currentUrl)}`);
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                // On error, assume not authenticated
+                onClose();
+                const currentUrl = window.location.pathname + window.location.search;
+                router.push(`/auth?redirect=${encodeURIComponent(currentUrl)}`);
             }
-
-            setUser(session.user);
-
-            // They are logged in! Fetch their profile to auto-fill
-            const { data: profile } = await supabase
-                .from('user_profiles')
-                .select('default_address, default_phone')
-                .eq('id', session.user.id)
-                .single();
-
-            if (profile) {
-                if (profile.default_address) setAddress(profile.default_address);
-                if (profile.default_phone) setMobile(profile.default_phone);
-            }
-            
-            setIsCheckingAuth(false);
         };
 
-        checkAuthAndProfile();
-    }, [isOpen, variant]);
+        checkAuth();
+    }, [isOpen, router, onClose]);
+
+    // Parse address into components for API
+    const parseAddress = (fullAddress: string) => {
+        const lines = fullAddress.trim().split('\n');
+        const lastLine = lines[lines.length - 1] || '';
+        
+        // Try to extract postal code (6 digits)
+        const postalMatch = lastLine.match(/\b\d{6}\b/);
+        const postal_code = postalMatch ? postalMatch[0] : '';
+        
+        return {
+            address_line1: lines[0] || fullAddress,
+            address_line2: lines.length > 1 ? lines.slice(1, -1).join(', ') : '',
+            city: 'City',
+            state: 'State',
+            postal_code: postal_code || '000000',
+            country: 'India',
+        };
+    };
 
     if (!isOpen || !product || !variant) return null;
-
-    // If we're redirecting, don't flash the modal UI
-    if (isCheckingAuth) return null;
-
-    const generateOrderId = () => {
-        return "SAVI-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
         setError(null);
 
-        const newOrderId = generateOrderId();
+        try {
+            const addressParts = parseAddress(address);
+            
+            const { data, error: apiError } = await apiClient.createOrder({
+                variant_id: variant.id,
+                quantity: 1,
+                ...addressParts,
+                phone: mobile,
+            });
 
-        // 1. Save or Update their profile with the latest address/phone (Only if logged in)
-        if (user) {
-            await supabase
-                .from('user_profiles')
-                .upsert({ 
-                    id: user.id, 
-                    default_address: address, 
-                    default_phone: mobile,
-                    updated_at: new Date().toISOString()
-                });
-        }
+            setIsSubmitting(false);
 
-        // 2. Save to Supabase Orders
-        const { error: dbError } = await supabase
-            .from('orders')
-            .insert([
-                { 
-                    id: newOrderId,
-                    user_id: user ? user.id : null, // Handle guest checkout by allowing null
-                    variant_id: variant.id, 
-                    customer_address: address, 
-                    customer_phone: mobile 
-                }
-            ]);
+            if (apiError || !data) {
+                console.error("Error saving order:", apiError);
+                setError(apiError?.message || "Failed to place order. Please try again.");
+                return;
+            }
 
-        setIsSubmitting(false);
-
-        if (dbError) {
-            console.error("Error saving order:", dbError);
+            setOrderId((data as { order: { order_id: string } }).order.order_id);
+        } catch (err) {
+            setIsSubmitting(false);
+            console.error("Error placing order:", err);
             setError("Failed to place order. Please try again.");
-            return;
         }
-
-        // 3. Show Success Screen
-        setOrderId(newOrderId);
     };
 
     const handleClose = () => {
-        // Reset state on close
         setTimeout(() => {
             setOrderId(null);
             setError(null);
-            // We intentionally do NOT reset address/mobile here so it stays cached in state 
-            // if they just close and reopen immediately without refreshing.
         }, 300);
         onClose();
     };
@@ -168,7 +160,12 @@ export default function CheckoutModal({ isOpen, product, variant, onClose }: Che
                 ) : (
                     <>
                         <div className="p-6 border-b border-[#E0DCD0] flex gap-4 items-center bg-white">
-                            <img src={variant.image_url} alt={product.name} className="w-16 h-16 object-cover rounded-md border border-gray-200" />
+                            <img 
+                                src={variant.image_url} 
+                                alt={product.name} 
+                                className="w-16 h-16 object-cover rounded-md border border-gray-200"
+                                loading="lazy"
+                            />
                             <div>
                                 <h3 className="text-xl font-serif text-black">{product.name}</h3>
                                 <p className="text-sm text-gray-500">{variant.color_name}</p>

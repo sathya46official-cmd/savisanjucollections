@@ -1,17 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase/client";
+import { useState, useEffect, useMemo } from "react";
+import { apiClient } from "@/lib/api/client";
 import CheckoutModal from "./CheckoutModal";
-import { Heart, ShoppingBag } from "lucide-react";
+import ProductFilters from "./ProductFilters";
+import ProductSort, { SortOption } from "./ProductSort";
+import { Heart, ShoppingBag, Filter, X } from "lucide-react";
 
 export default function ShopGridClient({ categoryId, categoryName }: { categoryId: string, categoryName: string }) {
     const [variants, setVariants] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     
     // Filter State
+    const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
+    const [selectedFabrics, setSelectedFabrics] = useState<string[]>([]);
     const [selectedColors, setSelectedColors] = useState<string[]>([]);
-    const [selectedOccasion, setSelectedOccasion] = useState<string | null>(null);
+    const [showOutOfStock, setShowOutOfStock] = useState(true);
+    
+    // Sort State
+    const [sortBy, setSortBy] = useState<SortOption>('relevance');
+    
+    // Mobile Filter State
+    const [showMobileFilters, setShowMobileFilters] = useState(false);
     
     // Checkout Modal State
     const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -19,163 +29,337 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
 
     useEffect(() => {
         const fetchVariants = async () => {
-            // Fetch variants (sarees). If categoryId is 'all', fetch everything.
-            let query = supabase
-                .from('product_variants')
-                .select('*, product:products(name)')
-                .order('created_at', { ascending: true });
-                
-            if (categoryId !== 'all') {
-                query = query.eq('product_id', categoryId);
+            if (categoryId === 'all') {
+                // Fetch all variants
+                const { data, error } = await apiClient.getAllVariants();
+                if (data) {
+                    // Transform data to match expected format
+                    const transformedData = data.map((v: any) => ({
+                        ...v,
+                        color_name: v.color,
+                        hex_code: v.hex_code || '#000000',
+                        stock_status: v.quantity > 0 ? 'in_stock' : 'out_of_stock',
+                        product: { name: v.product_name },
+                        fabric: v.fabric || 'Silk' // Default fabric if not in DB
+                    }));
+                    setVariants(transformedData);
+                    
+                    // Set initial price range based on data
+                    if (transformedData.length > 0) {
+                        const prices = transformedData.map((v: any) => v.price || 0);
+                        const min = Math.min(...prices);
+                        const max = Math.max(...prices);
+                        setPriceRange([min, max]);
+                    }
+                }
+            } else {
+                // Fetch variants for specific product
+                const { data, error } = await apiClient.getProduct(categoryId);
+                if (data && data.variants) {
+                    // Transform data to match expected format
+                    const transformedData = data.variants.map((v: any) => ({
+                        ...v,
+                        color_name: v.color,
+                        hex_code: v.hex_code || '#000000',
+                        stock_status: v.quantity > 0 ? 'in_stock' : 'out_of_stock',
+                        product: { name: data.name },
+                        product_id: categoryId,
+                        fabric: v.fabric || 'Silk'
+                    }));
+                    setVariants(transformedData);
+                    
+                    // Set initial price range based on data
+                    if (transformedData.length > 0) {
+                        const prices = transformedData.map((v: any) => v.price || 0);
+                        const min = Math.min(...prices);
+                        const max = Math.max(...prices);
+                        setPriceRange([min, max]);
+                    }
+                }
             }
-            
-            const { data, error } = await query;
-                
-            if (data) setVariants(data);
             setLoading(false);
         };
         fetchVariants();
     }, [categoryId]);
 
+    // Extract unique fabrics and colors from variants
+    const availableFabrics = useMemo(() => {
+        const fabrics = Array.from(new Set(variants.map(v => v.fabric).filter(Boolean)));
+        return fabrics as string[];
+    }, [variants]);
+
+    const availableColors = useMemo(() => {
+        const colorMap = new Map<string, string>();
+        variants.forEach(v => {
+            if (v.color_name && v.hex_code) {
+                colorMap.set(v.color_name, v.hex_code);
+            }
+        });
+        return Array.from(colorMap.entries()).map(([name, hex]) => ({ name, hex }));
+    }, [variants]);
+
+    // Get min/max prices for filter
+    const minPrice = useMemo(() => {
+        if (variants.length === 0) return 0;
+        return Math.min(...variants.map(v => v.price || 0));
+    }, [variants]);
+
+    const maxPrice = useMemo(() => {
+        if (variants.length === 0) return 10000;
+        return Math.max(...variants.map(v => v.price || 0));
+    }, [variants]);
+
+    // Filter and sort variants
+    const filteredAndSortedVariants = useMemo(() => {
+        let filtered = variants.filter(v => {
+            // Price filter
+            if (v.price < priceRange[0] || v.price > priceRange[1]) return false;
+            
+            // Fabric filter
+            if (selectedFabrics.length > 0 && !selectedFabrics.includes(v.fabric)) return false;
+            
+            // Color filter
+            if (selectedColors.length > 0 && !selectedColors.includes(v.color_name)) return false;
+            
+            // Stock filter
+            if (!showOutOfStock && v.stock_status === 'out_of_stock') return false;
+            
+            return true;
+        });
+
+        // Sort
+        switch (sortBy) {
+            case 'price-low-high':
+                filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
+                break;
+            case 'price-high-low':
+                filtered.sort((a, b) => (b.price || 0) - (a.price || 0));
+                break;
+            case 'newest':
+                filtered.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+                break;
+            case 'name-az':
+                filtered.sort((a, b) => (a.color_name || '').localeCompare(b.color_name || ''));
+                break;
+            case 'name-za':
+                filtered.sort((a, b) => (b.color_name || '').localeCompare(a.color_name || ''));
+                break;
+            default:
+                // relevance - keep original order
+                break;
+        }
+
+        return filtered;
+    }, [variants, priceRange, selectedFabrics, selectedColors, showOutOfStock, sortBy]);
+
+    // Count active filters
+    const activeFilterCount = useMemo(() => {
+        let count = 0;
+        if (priceRange[0] !== minPrice || priceRange[1] !== maxPrice) count++;
+        if (selectedFabrics.length > 0) count += selectedFabrics.length;
+        if (selectedColors.length > 0) count += selectedColors.length;
+        if (!showOutOfStock) count++;
+        return count;
+    }, [priceRange, selectedFabrics, selectedColors, showOutOfStock, minPrice, maxPrice]);
+
+    // Clear all filters
+    const handleClearAllFilters = () => {
+        setPriceRange([minPrice, maxPrice]);
+        setSelectedFabrics([]);
+        setSelectedColors([]);
+        setShowOutOfStock(true);
+    };
+
     if (loading) return null;
 
     return (
-        <div className="max-w-[1600px] mx-auto px-8 md:px-16 py-16 flex flex-col md:flex-row gap-12">
-            
-            {/* Left Sidebar Filters */}
-            <aside className="w-full md:w-64 flex-shrink-0 border-r border-[#EAE6D9] pr-8 hidden md:block">
-                <div className="flex justify-between items-center mb-8 pb-4 border-b border-[#EAE6D9]">
-                    <h3 className="text-sm font-serif tracking-[0.2em] text-[#A69E8C] uppercase">Filter By</h3>
-                    {(selectedColors.length > 0 || selectedOccasion) && (
-                        <button 
-                            onClick={() => { setSelectedColors([]); setSelectedOccasion(null); }}
-                            className="text-[10px] uppercase tracking-widest text-red-500 hover:text-red-700"
-                        >Clear</button>
-                    )}
-                </div>
+        <>
+            <div className="max-w-[1800px] mx-auto flex h-[calc(100vh-300px)]">
                 
-                <div className="mb-10">
-                    <h4 className="text-sm tracking-widest text-[#1A1A1A] mb-4 uppercase">Color Palette</h4>
-                    <div className="flex flex-wrap gap-3">
-                        {Array.from(new Set(variants.map(v => v.hex_code))).map((hex: any, i) => (
-                            <button 
-                                key={i} 
-                                onClick={() => setSelectedColors(prev => prev.includes(hex) ? prev.filter(c => c !== hex) : [...prev, hex])}
-                                className={`w-6 h-6 rounded-full shadow-sm cursor-pointer border-2 transition-transform hover:scale-110 ${selectedColors.includes(hex) ? 'border-[#1A1A1A] scale-110' : 'border-gray-200'}`}
-                                style={{ backgroundColor: hex || '#fff' }}
-                                title="Filter by Color"
+                {/* Desktop Filters */}
+                <div className="hidden md:block">
+                    <ProductFilters
+                        minPrice={minPrice}
+                        maxPrice={maxPrice}
+                        priceRange={priceRange}
+                        onPriceChange={setPriceRange}
+                        availableFabrics={availableFabrics}
+                        selectedFabrics={selectedFabrics}
+                        onFabricChange={setSelectedFabrics}
+                        availableColors={availableColors}
+                        selectedColors={selectedColors}
+                        onColorChange={setSelectedColors}
+                        showOutOfStock={showOutOfStock}
+                        onStockChange={setShowOutOfStock}
+                        onClearAll={handleClearAllFilters}
+                        activeFilterCount={activeFilterCount}
+                    />
+                </div>
+
+                {/* Mobile Filter Button */}
+                <button
+                    onClick={() => setShowMobileFilters(true)}
+                    className="md:hidden fixed bottom-6 right-6 z-40 bg-gray-900 text-white p-4 rounded-full shadow-lg flex items-center gap-2"
+                >
+                    <Filter size={20} />
+                    {activeFilterCount > 0 && (
+                        <span className="bg-white text-gray-900 text-xs rounded-full px-2 py-0.5 font-medium">
+                            {activeFilterCount}
+                        </span>
+                    )}
+                </button>
+
+                {/* Mobile Filters Overlay */}
+                {showMobileFilters && (
+                    <div className="md:hidden fixed inset-0 z-50 bg-black/50" onClick={() => setShowMobileFilters(false)}>
+                        <div className="absolute right-0 top-0 h-full w-full max-w-sm bg-white overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                            <div className="sticky top-0 bg-white z-10 border-b border-gray-200 p-4 flex items-center justify-between">
+                                <h2 className="text-lg font-semibold">Filters</h2>
+                                <button onClick={() => setShowMobileFilters(false)}>
+                                    <X size={24} />
+                                </button>
+                            </div>
+                            <ProductFilters
+                                minPrice={minPrice}
+                                maxPrice={maxPrice}
+                                priceRange={priceRange}
+                                onPriceChange={setPriceRange}
+                                availableFabrics={availableFabrics}
+                                selectedFabrics={selectedFabrics}
+                                onFabricChange={setSelectedFabrics}
+                                availableColors={availableColors}
+                                selectedColors={selectedColors}
+                                onColorChange={setSelectedColors}
+                                showOutOfStock={showOutOfStock}
+                                onStockChange={setShowOutOfStock}
+                                onClearAll={handleClearAllFilters}
+                                activeFilterCount={activeFilterCount}
                             />
-                        ))}
-                    </div>
-                </div>
-
-                <div className="mb-10">
-                    <h4 className="text-sm tracking-widest text-[#1A1A1A] mb-4 uppercase">Occasion</h4>
-                    <ul className="space-y-3 text-sm text-[#5C584E] font-light">
-                        {['Wedding Collection', 'Festive Wear', 'Bridal Trousseau', 'Evening Soiree'].map(occ => (
-                            <li key={occ} onClick={() => setSelectedOccasion(selectedOccasion === occ ? null : occ)} className={`cursor-pointer transition ${selectedOccasion === occ ? 'text-black font-medium' : 'hover:text-black'}`}>
-                                {occ}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            </aside>
-
-            {/* Right Side: Product Grid */}
-            <div className="flex-1">
-                <div className="flex justify-between items-center mb-8 border-b border-[#EAE6D9] pb-4">
-                    <h2 className="text-2xl font-serif text-[#1A1A1A] tracking-wider">
-                        {categoryName} Collection
-                    </h2>
-                    <span className="text-sm text-[#8C8776] tracking-widest">
-                        {variants.filter(v => (selectedColors.length === 0 || selectedColors.includes(v.hex_code))).length} Masterpieces
-                    </span>
-                </div>
-
-                {variants.length === 0 ? (
-                    <div className="text-center py-20 text-[#8C8776] tracking-widest uppercase">
-                        No creations available in this collection yet.
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
-                        {variants.filter(v => {
-                            if (selectedColors.length > 0 && !selectedColors.includes(v.hex_code)) return false;
-                            // Add specific occason logic here if DB supports it later, ignoring mock occasions for now
-                            return true;
-                        }).map((variant) => {
-                            
-                            const displayPrice = variant.price ? variant.price.toLocaleString('en-IN') : 'Price on Request';
-                            const isNegotiable = variant.is_negotiable;
-
-                            return (
-                                <a 
-                                    href={`/shop/${variant.product_id}/${variant.id}`} 
-                                    key={variant.id} 
-                                    className="group relative bg-white pb-6 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] hover:shadow-[0_10px_30px_-15px_rgba(0,0,0,0.1)] transition-all duration-500 rounded-sm cursor-pointer block"
+                            <div className="p-4 border-t border-gray-200">
+                                <button
+                                    onClick={() => setShowMobileFilters(false)}
+                                    className="w-full bg-gray-900 text-white py-3 rounded-md font-medium"
                                 >
-                                    {/* Image Container */}
-                                    <div className="w-full aspect-[3/4] overflow-hidden bg-[#F4F2EC] mb-6 relative">
-                                        {variant.image_url ? (
-                                            <>
-                                                {/* Primary Image */}
-                                                <img 
-                                                    src={variant.image_url} 
-                                                    alt={`${variant.color_name} Saree`}
-                                                    className={`w-full h-full object-cover object-center absolute inset-0 transition-opacity duration-700 ${variant.additional_images && variant.additional_images.length > 0 ? 'group-hover:opacity-0' : 'group-hover:scale-105'}`}
-                                                />
-                                                {/* Secondary Image on Hover */}
-                                                {variant.additional_images && variant.additional_images.length > 0 && (
-                                                    <img 
-                                                        src={variant.additional_images[0]} 
-                                                        alt={`${variant.color_name} Alternate`}
-                                                        className="w-full h-full object-cover object-center absolute inset-0 opacity-0 transition-opacity duration-700 group-hover:opacity-100 group-hover:scale-105"
-                                                    />
-                                                )}
-                                            </>
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-[#A69E8C]">Image Missing</div>
-                                        )}
-                                        
-                                        {/* Minimal Quick Action Overlay */}
-                                        <div className="absolute top-4 right-4 bg-white/50 backdrop-blur-md p-2 rounded-full hover:bg-white transition-colors">
-                                            <Heart size={18} className="text-[#1A1A1A]" strokeWidth={1.5} />
-                                        </div>
-
-                                        {variant.stock_status === 'limited' && (
-                                            <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md text-white text-[10px] tracking-widest uppercase px-3 py-1">
-                                                Limited Edition
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Typography & Details */}
-                                    <div className="px-6 relative">
-                                        <h3 className="text-[#1A1A1A] font-serif text-lg tracking-wide mb-1 flex items-center gap-2">
-                                            <span className="w-3 h-3 rounded-full border border-gray-200" style={{ backgroundColor: variant.hex_code }} />
-                                            {variant.color_name} {variant.product?.name || categoryName}
-                                        </h3>
-                                        
-                                        <div className="flex justify-between items-end mb-6">
-                                            <div className="text-sm text-[#5C584E] tracking-widest uppercase font-light">
-                                                {variant.price ? `₹ ${displayPrice}` : displayPrice}
-                                            </div>
-                                            <div className="text-[10px] text-[#A69E8C] tracking-widest uppercase">
-                                                {isNegotiable && variant.price ? 'Negotiable' : (variant.price ? 'Fixed' : '')}
-                                            </div>
-                                        </div>
-                                        
-                                        <div 
-                                            className="w-full bg-[#1A1A1A] text-white tracking-widest uppercase text-xs py-4 flex items-center justify-center gap-2 hover:bg-[#333] transition-colors"
-                                        >
-                                            <ShoppingBag size={14} /> View Details
-                                        </div>
-                                    </div>
-                                </a>
-                            );
-                        })}
+                                    Apply Filters
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
+
+                {/* Products Section */}
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    {/* Sort Bar */}
+                    <ProductSort
+                        currentSort={sortBy}
+                        onSortChange={setSortBy}
+                        resultCount={filteredAndSortedVariants.length}
+                    />
+
+                    {/* Product Grid */}
+                    <div className="flex-1 overflow-y-auto px-6 py-8">
+                        {filteredAndSortedVariants.length === 0 ? (
+                            <div className="text-center py-20">
+                                <p className="text-gray-500 text-lg mb-4">No products found</p>
+                                <button
+                                    onClick={handleClearAllFilters}
+                                    className="text-blue-600 hover:text-blue-800 font-medium"
+                                >
+                                    Clear all filters
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                {filteredAndSortedVariants.map((variant) => {
+                                    const displayPrice = variant.price ? variant.price.toLocaleString('en-IN') : 'Price on Request';
+                                    const isNegotiable = variant.is_negotiable;
+
+                                    return (
+                                        <a 
+                                            href={`/shop/${variant.product_id}/${variant.id}`} 
+                                            key={variant.id} 
+                                            className="group relative bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden"
+                                        >
+                                            {/* Image Container */}
+                                            <div className="w-full aspect-[3/4] overflow-hidden bg-gray-100 relative">
+                                                {variant.image_url ? (
+                                                    <>
+                                                        <img 
+                                                            src={variant.image_url} 
+                                                            alt={`${variant.color_name} Saree`}
+                                                            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+                                                            loading="lazy"
+                                                        />
+                                                        {/* Out of Stock Overlay */}
+                                                        {variant.stock_status === 'out_of_stock' && (
+                                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                                                <span className="bg-white text-gray-900 px-4 py-2 rounded-md font-medium text-sm">
+                                                                    Out of Stock
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                                        No Image
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Wishlist Button */}
+                                                <button className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors">
+                                                    <Heart size={18} className="text-gray-700" strokeWidth={1.5} />
+                                                </button>
+
+                                                {/* Limited Edition Badge */}
+                                                {variant.stock_status === 'limited' && (
+                                                    <div className="absolute top-3 left-3 bg-red-600 text-white text-xs px-2 py-1 rounded">
+                                                        Limited
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Product Details */}
+                                            <div className="p-4">
+                                                <h3 className="text-gray-900 font-medium text-sm mb-1 line-clamp-2">
+                                                    {variant.color_name} {variant.product?.name || categoryName}
+                                                </h3>
+                                                
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <div
+                                                        className="w-4 h-4 rounded-full border border-gray-300"
+                                                        style={{ backgroundColor: variant.hex_code }}
+                                                    />
+                                                    <span className="text-xs text-gray-500">{variant.fabric}</span>
+                                                </div>
+                                                
+                                                <div className="flex items-center justify-between">
+                                                    <div className="text-gray-900 font-semibold">
+                                                        ₹{displayPrice}
+                                                    </div>
+                                                    {isNegotiable && variant.price && (
+                                                        <span className="text-xs text-green-600">Negotiable</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </a>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
-        </div>
+
+            {/* Checkout Modal */}
+            <CheckoutModal
+                isOpen={isCheckoutOpen}
+                product={selectedVariantForCheckout?.product || null}
+                variant={selectedVariantForCheckout}
+                onClose={() => {
+                    setIsCheckoutOpen(false);
+                    setSelectedVariantForCheckout(null);
+                }}
+            />
+        </>
     );
 }

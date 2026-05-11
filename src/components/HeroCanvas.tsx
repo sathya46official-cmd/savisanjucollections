@@ -12,27 +12,75 @@ export default function HeroCanvas() {
     const containerRef = useRef<HTMLDivElement>(null);
     const [images, setImages] = useState<HTMLImageElement[]>([]);
     const [isLoaded, setIsLoaded] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+    const [isLowPerformance, setIsLowPerformance] = useState(false);
 
-    // Preload images
+    // Detect mobile and performance
+    useEffect(() => {
+        // Check if mobile device
+        const checkMobile = () => {
+            const mobile = window.matchMedia('(max-width: 768px)').matches;
+            setIsMobile(mobile);
+        };
+
+        // Check device performance
+        const checkPerformance = () => {
+            // Check for low-end devices
+            const isLowEnd = 
+                // Limited CPU cores
+                (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) ||
+                // Limited memory (< 4GB)
+                ((navigator as any).deviceMemory && (navigator as any).deviceMemory < 4) ||
+                // Mobile device
+                /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            setIsLowPerformance(isLowEnd);
+        };
+
+        checkMobile();
+        checkPerformance();
+
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    // Preload images with lazy loading
     useEffect(() => {
         const frameCount = 72;
         const loadedImages: HTMLImageElement[] = [];
         let loadedCount = 0;
 
-        for (let i = 1; i <= frameCount; i++) {
-            const img = new Image();
-            // Ensure specific frame naming: ezgif-frame-001.jpeg to 072.jpeg
-            const frameIndex = i.toString().padStart(3, "0");
-            img.src = `/assets/hero-sequence/ezgif-frame-${frameIndex}.jpg`;
-            img.onload = () => {
-                loadedCount++;
-                if (loadedCount === frameCount) {
-                    setIsLoaded(true);
-                }
-            };
-            loadedImages.push(img);
+        // Use Intersection Observer for lazy loading
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        // Start loading images when hero section is visible
+                        for (let i = 1; i <= frameCount; i++) {
+                            const img = new Image();
+                            const frameIndex = i.toString().padStart(3, "0");
+                            img.src = `/assets/hero-sequence/ezgif-frame-${frameIndex}.jpg`;
+                            img.onload = () => {
+                                loadedCount++;
+                                if (loadedCount === frameCount) {
+                                    setIsLoaded(true);
+                                }
+                            };
+                            loadedImages.push(img);
+                        }
+                        setImages(loadedImages);
+                        observer.disconnect();
+                    }
+                });
+            },
+            { rootMargin: '100px' } // Start loading 100px before visible
+        );
+
+        if (containerRef.current) {
+            observer.observe(containerRef.current);
         }
-        setImages(loadedImages);
+
+        return () => observer.disconnect();
     }, []);
 
     useGSAP(
@@ -75,17 +123,25 @@ export default function HeroCanvas() {
             // Initial render
             render(0);
 
-            // const frameObj = { frame: 0 }; // Unused
+            // Optimize animation for mobile and low-performance devices
+            const scrubValue = isLowPerformance ? 2 : 1; // Slower scrub on low-end devices
+            const pinDuration = isMobile ? "+=200%" : "+=300%"; // Shorter pin on mobile
 
             ScrollTrigger.create({
                 trigger: containerRef.current,
                 start: "top top",
-                end: "+=300%", // Pin for 3 screen heights
+                end: pinDuration,
                 pin: true,
-                scrub: 1, // Smooth scrubbing
+                scrub: scrubValue,
                 onUpdate: (self) => {
+                    // Reduce frame rate on low-performance devices
+                    const frameSkip = isLowPerformance ? 2 : 1;
                     const frameIndex = Math.round(self.progress * (images.length - 1));
-                    render(frameIndex);
+                    
+                    // Skip frames on low-end devices
+                    if (frameIndex % frameSkip === 0 || frameIndex === images.length - 1) {
+                        render(frameIndex);
+                    }
                 },
             });
 
@@ -93,14 +149,12 @@ export default function HeroCanvas() {
             const handleResize = () => {
                 canvas.width = window.innerWidth;
                 canvas.height = window.innerHeight;
-                // Re-render current frame? logic gets complex, simplest is to let scroll update handle it or force generic re-render of frame 0 if stuck. 
-                // For now, rely on scroll update or just re-render last known frame if tracked.
             };
 
             window.addEventListener('resize', handleResize);
             return () => window.removeEventListener('resize', handleResize);
         },
-        { scope: containerRef, dependencies: [isLoaded, images] }
+        { scope: containerRef, dependencies: [isLoaded, images, isMobile, isLowPerformance] }
     );
 
     return (

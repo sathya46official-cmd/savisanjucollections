@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/client";
+import { apiClient } from "@/lib/api/client";
 
 export default function CollectionAccordion() {
     const router = useRouter();
@@ -10,17 +10,12 @@ export default function CollectionAccordion() {
 
     useEffect(() => {
         const fetchCatalog = async () => {
-            const { data } = await supabase
-                .from('products')
-                .select(`
-                    *,
-                    variants:product_variants (*)
-                `)
-                .order('created_at', { ascending: true });
+            // Fetch only featured products
+            const { data } = await apiClient.getProducts(true);
             
             if (data) {
-                // Filter out products with no variants so they don't break the UI
-                const activeProducts = data.filter(p => p.variants && p.variants.length > 0);
+                // Filter out products with no variants
+                const activeProducts = data.filter((p: any) => p.variants && p.variants.length > 0);
                 setProducts(activeProducts);
             }
         };
@@ -78,4 +73,3 @@ export default function CollectionAccordion() {
         </section>
     );
 }
-

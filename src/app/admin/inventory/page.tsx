@@ -1,428 +1,502 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase/client";
-import { Plus, Trash2, Edit3, Image as ImageIcon, CheckCircle, PackageSearch } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Package } from "lucide-react";
+import { apiClient } from "@/lib/api/client";
+import ColorPicker from "@/components/admin/ColorPicker";
+import ImageUploader from "@/components/admin/ImageUploader";
 
-export default function InventoryManager() {
-    const [products, setProducts] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+interface Product {
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  featured: boolean;
+  display_order: number;
+  variants?: ProductVariant[];
+}
 
-    // Form State
-    const [isAddMode, setIsAddMode] = useState(false);
-    const [newProductName, setNewProductName] = useState("");
-    const [newProductDesc, setNewProductDesc] = useState("");
+interface ProductVariant {
+  id: string;
+  product_id: string;
+  color: string;
+  hex_code: string;
+  size?: string;
+  price: number;
+  quantity: number;
+  image_url: string;
+  is_negotiable: boolean;
+}
+
+export default function InventoryPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [showVariantForm, setShowVariantForm] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+  // Product form state
+  const [productForm, setProductForm] = useState({
+    name: "",
+    description: "",
+    category: "",
+    featured: false,
+    display_order: 0
+  });
+
+  // Variant form state
+  const [variantForm, setVariantForm] = useState({
+    color: "",
+    hex_code: "#000000",
+    size: "",
+    price: "",
+    quantity: 0,
+    is_negotiable: false
+  });
+  const [variantImages, setVariantImages] = useState<File[]>([]);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    const { data, error } = await apiClient.getProducts();
+    if (!error && data) {
+      setProducts(data);
+    }
+    setLoading(false);
+  };
+
+  const handleCreateProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    // Variant State
-    const [colorName, setColorName] = useState("");
-    const [hexCode, setHexCode] = useState("#000000");
-    const [stockStatus, setStockStatus] = useState("in_stock");
-    const [price, setPrice] = useState("");
-    const [isNegotiable, setIsNegotiable] = useState(false);
-    const [variantDescription, setVariantDescription] = useState("");
-    const [imageFiles, setImageFiles] = useState<File[]>([]);
-    const [uploading, setUploading] = useState(false);
+    const { data, error } = await apiClient.createProduct(productForm);
+    
+    if (!error && data) {
+      setProducts([...products, data as Product]);
+      setProductForm({ name: "", description: "", category: "", featured: false, display_order: 0 });
+      setShowProductForm(false);
+      setSelectedProduct(data as Product);
+      setShowVariantForm(true);
+    } else {
+      alert(error?.message || "Failed to create product");
+    }
+  };
 
-    const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-    const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
+  const handleUpdateProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editingProduct) return;
 
-    const resetForm = () => {
-        setNewProductName("");
-        setNewProductDesc("");
-        setColorName("");
-        setHexCode("#000000");
-        setPrice("");
-        setIsNegotiable(false);
-        setVariantDescription("");
-        setImageFiles([]);
-        setSelectedProductId(null);
-        setEditingVariantId(null);
-    };
+    const { data, error } = await apiClient.updateProduct(editingProduct.id, productForm);
+    
+    if (!error && data) {
+      setProducts(products.map(p => p.id === (data as Product).id ? data as Product : p));
+      setEditingProduct(null);
+      setShowProductForm(false);
+      setProductForm({ name: "", description: "", category: "", featured: false, display_order: 0 });
+    } else {
+      alert(error?.message || "Failed to update product");
+    }
+  };
 
-    useEffect(() => {
-        fetchProducts();
-    }, []);
+  const handleDeleteProduct = async (productId: string) => {
+    if (!confirm("Are you sure you want to delete this product? All variants will be deleted.")) return;
 
-    const fetchProducts = async () => {
-        setLoading(true);
-        const { data, error } = await supabase
-            .from('products')
-            .select(`
-                *,
-                product_variants (*)
-            `)
-            .order('name', { ascending: true });
-        
-        if (data) setProducts(data);
-        setLoading(false);
-    };
+    const { error } = await apiClient.deleteProduct(productId);
+    
+    if (!error) {
+      setProducts(products.filter(p => p.id !== productId));
+    } else {
+      alert(error?.message || "Failed to delete product");
+    }
+  };
 
-    const handleCreateProduct = async (e: React.FormEvent) => {
-        e.preventDefault();
+  const handleCreateVariant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedProduct) return;
 
-        // Check for existing category name first
-        const categoryExists = products.some(
-            p => p.name.toLowerCase().trim() === newProductName.toLowerCase().trim()
-        );
+    // Upload images first
+    let imageUrls: string[] = [];
+    if (variantImages.length > 0) {
+      const { data: urls, error: uploadError } = await apiClient.uploadImages(variantImages);
+      if (uploadError) {
+        alert("Failed to upload images: " + uploadError.message);
+        return;
+      }
+      imageUrls = urls || [];
+    }
 
-        if (categoryExists) {
-            alert(`A category named "${newProductName}" already exists! Please click "+ Add Color" on the existing category below instead of creating a new one.`);
-            return;
-        }
+    const { data, error } = await apiClient.createVariant(selectedProduct.id, {
+      ...variantForm,
+      price: parseFloat(variantForm.price) * 100, // Convert to paise
+      image_url: JSON.stringify(imageUrls)
+    });
+    
+    if (!error && data) {
+      fetchProducts();
+      setVariantForm({ color: "", hex_code: "#000000", size: "", price: "", quantity: 0, is_negotiable: false });
+      setVariantImages([]);
+      setShowVariantForm(false);
+      setSelectedProduct(null);
+    } else {
+      alert(error?.message || "Failed to create variant");
+    }
+  };
 
-        setUploading(true);
+  const handleUpdateStock = async (variantId: string, newQuantity: number) => {
+    const { error } = await apiClient.updateStock(variantId, newQuantity);
+    
+    if (!error) {
+      fetchProducts();
+    } else {
+      alert(error?.message || "Failed to update stock");
+    }
+  };
 
-        const { data, error } = await supabase
-            .from('products')
-            .insert([{ name: newProductName.trim(), description: newProductDesc }])
-            .select();
+  const handleDeleteVariant = async (variantId: string) => {
+    if (!confirm("Are you sure you want to delete this variant?")) return;
 
-        if (error) {
-            console.error("Error creating product:", error);
-            alert("Failed to create product. Make sure you are using an admin authenticated session.");
-            setUploading(false);
-            return;
-        }
+    const { error } = await apiClient.deleteVariant(variantId);
+    
+    if (!error) {
+      fetchProducts();
+    } else {
+      alert(error?.message || "Failed to delete variant");
+    }
+  };
 
-        const newProductId = data[0].id;
+  const filteredProducts = products.filter(p =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.category?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-        // If variant info exists, upload images and create variant
-        if (imageFiles.length > 0 && colorName) {
-            await createVariant(newProductId);
-        } else {
-            setUploading(false);
-            setIsAddMode(false);
-            fetchProducts();
-        }
-    };
+  if (loading) {
+    return <div className="text-center py-12">Loading...</div>;
+  }
 
-    const createVariant = async (productId: string) => {
-        if (imageFiles.length === 0) return;
+  return (
+    <div className="max-w-7xl mx-auto">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-serif font-bold text-gray-900">Inventory Management</h1>
+          <p className="text-gray-500 mt-1">Manage products and variants</p>
+        </div>
+        <button
+          onClick={() => {
+            setShowProductForm(true);
+            setEditingProduct(null);
+            setProductForm({ name: "", description: "", category: "", featured: false, display_order: 0 });
+          }}
+          className="bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition flex items-center gap-2"
+        >
+          <Plus size={20} />
+          Add New Product
+        </button>
+      </div>
 
-        const mainImageUrl = await uploadSingleImage(imageFiles[0]);
-        const additionalImageUrls = [];
+      {/* Search */}
+      <div className="mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+          />
+        </div>
+      </div>
 
-        for (let i = 1; i < imageFiles.length; i++) {
-            const url = await uploadSingleImage(imageFiles[i]);
-            if (url) additionalImageUrls.push(url);
-        }
-
-        if (!mainImageUrl) {
-            alert("Failed to upload primary image.");
-            setUploading(false);
-            return;
-        }
-
-        // Insert Variant to DB
-        const { error: variantError } = await supabase
-            .from('product_variants')
-            .insert([{
-                product_id: productId,
-                color_name: colorName,
-                hex_code: hexCode,
-                stock_status: stockStatus,
-                price: price ? parseFloat(price) : null,
-                is_negotiable: isNegotiable,
-                description: variantDescription || null,
-                image_url: mainImageUrl,
-                additional_images: additionalImageUrls
-            }]);
-
-        if (variantError) console.error("Error creating variant:", variantError);
-
-        setUploading(false);
-        setIsAddMode(false);
-        resetForm();
-        fetchProducts();
-    };
-
-    const uploadSingleImage = async (file: File) => {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        const filePath = `${fileName}`;
-
-        let { error: uploadError } = await supabase.storage
-            .from('sarees')
-            .upload(filePath, file, { cacheControl: '3600', upsert: false });
-
-        if (uploadError) {
-            console.error("Upload error:", uploadError);
-            return null;
-        }
-
-        const { data: publicUrlData } = supabase.storage.from('sarees').getPublicUrl(filePath);
-        return publicUrlData.publicUrl;
-    };
-
-    const handleAddVariantToExisting = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!selectedProductId || imageFiles.length === 0 || !colorName) return;
-        setUploading(true);
-        await createVariant(selectedProductId);
-    };
-
-    const handleUpdateVariant = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setUploading(true);
-
-        let mainImageUrl = undefined;
-        let additionalImageUrls = undefined;
-
-        if (imageFiles.length > 0) {
-            mainImageUrl = await uploadSingleImage(imageFiles[0]);
-            additionalImageUrls = [];
-            for (let i = 1; i < imageFiles.length; i++) {
-                const url = await uploadSingleImage(imageFiles[i]);
-                if (url) additionalImageUrls.push(url);
-            }
-        }
-
-        const updates: any = {
-            color_name: colorName,
-            hex_code: hexCode,
-            stock_status: stockStatus,
-            price: price ? parseFloat(price) : null,
-            is_negotiable: isNegotiable,
-            description: variantDescription || null,
-        };
-
-        if (mainImageUrl) updates.image_url = mainImageUrl;
-        if (additionalImageUrls) updates.additional_images = additionalImageUrls;
-
-        const { error } = await supabase
-            .from('product_variants')
-            .update(updates)
-            .eq('id', editingVariantId);
-
-        if (error) {
-            console.error("Error updating variant:", error);
-            alert("Failed to update variant.");
-        }
-
-        setUploading(false);
-        setIsAddMode(false);
-        resetForm();
-        fetchProducts();
-    };
-
-    const handleEditVariantClick = (product: any, variant: any) => {
-        setIsAddMode(true);
-        setSelectedProductId(product.id);
-        setEditingVariantId(variant.id);
-        
-        setColorName(variant.color_name);
-        setHexCode(variant.hex_code || "#000000");
-        setStockStatus(variant.stock_status || "in_stock");
-        setPrice(variant.price ? variant.price.toString() : "");
-        setIsNegotiable(variant.is_negotiable || false);
-        setVariantDescription(variant.description || "");
-        setImageFiles([]);
-        
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    const handleDeleteProduct = async (id: string) => {
-        if(!confirm("Are you sure you want to delete this product and all its colors?")) return;
-        await supabase.from('products').delete().eq('id', id);
-        fetchProducts();
-    };
-
-    const handleDeleteVariant = async (id: string) => {
-        if(!confirm("Remove this color variant?")) return;
-        await supabase.from('product_variants').delete().eq('id', id);
-        fetchProducts();
-    };
-
-    const handleUpdateStock = async (id: string, newStatus: string) => {
-        await supabase.from('product_variants').update({ stock_status: newStatus }).eq('id', id);
-        fetchProducts();
-    };
-
-    return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-serif text-gray-900">Inventory Management</h1>
-                <button 
-                    onClick={() => { setIsAddMode(!isAddMode); resetForm(); }}
-                    className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800 transition"
+      {/* Product List */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredProducts.map(product => (
+          <div key={product.id} className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="font-semibold text-lg">{product.name}</h3>
+                <p className="text-sm text-gray-500">{product.category || "Uncategorized"}</p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setEditingProduct(product);
+                    setProductForm({
+                      name: product.name,
+                      description: product.description || "",
+                      category: product.category || "",
+                      featured: product.featured,
+                      display_order: product.display_order
+                    });
+                    setShowProductForm(true);
+                  }}
+                  className="text-blue-600 hover:text-blue-800"
                 >
-                    <Plus size={18} /> Add New Saree
+                  <Edit size={18} />
                 </button>
+                <button
+                  onClick={() => handleDeleteProduct(product.id)}
+                  className="text-red-600 hover:text-red-800"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
             </div>
 
-            {/* Form for New Product / New Variant */}
-            {isAddMode && (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-8 animate-in fade-in slide-in-from-top-4">
-                    <h2 className="text-lg font-medium mb-4 border-b pb-2">
-                        {editingVariantId ? "Edit Color Variant" : (selectedProductId ? "Add New Color Variant" : "Upload Full New Saree Type")}
-                    </h2>
-                    
-                    <form onSubmit={editingVariantId ? handleUpdateVariant : (selectedProductId ? handleAddVariantToExisting : handleCreateProduct)} className="flex flex-col gap-6">
-                        
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium text-gray-700">Select Category</label>
-                            <select 
-                                value={selectedProductId || "new"} 
-                                onChange={e => {
-                                    const val = e.target.value;
-                                    setSelectedProductId(val === "new" ? null : val);
-                                    if (val === "new") setEditingVariantId(null);
-                                }}
-                                disabled={!!editingVariantId}
-                                className="w-full border rounded-md px-3 py-2 text-black outline-none focus:ring-1 focus:ring-black bg-white disabled:bg-gray-100 disabled:text-gray-500"
-                            >
-                                <option value="new">+ Create New Category</option>
-                                {products.map(p => (
-                                    <option key={p.id} value={p.id}>{p.name}</option>
-                                ))}
-                            </select>
-                        </div>
+            <div className="space-y-2 mb-4">
+              <p className="text-sm text-gray-600">
+                {product.variants?.length || 0} variant(s)
+              </p>
+              {product.featured && (
+                <span className="inline-block bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">
+                  Featured
+                </span>
+              )}
+            </div>
 
-                        {!selectedProductId && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <label className="text-sm font-medium text-gray-700">Category Name (e.g. Silk, Banarasi)</label>
-                                    <input required value={newProductName} onChange={e => setNewProductName(e.target.value)} type="text" className="w-full border rounded-md px-3 py-2 outline-none focus:ring-1 focus:ring-black text-black" />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-sm font-medium text-gray-700">Rich Description</label>
-                                    <textarea required value={newProductDesc} onChange={e => setNewProductDesc(e.target.value)} rows={3} className="w-full border rounded-md px-3 py-2 outline-none focus:ring-1 focus:ring-black resize-none text-black" />
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="bg-white p-4 border border-gray-200 rounded-md">
-                            <h3 className="text-sm font-medium text-gray-900 mb-3">{selectedProductId ? "Variant Details" : "Initial Color Details (Optional)"}</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
-                                <div className="space-y-1">
-                                    <label className="text-xs text-gray-500">Color Name</label>
-                                    <input required={!!selectedProductId} value={colorName} onChange={e => setColorName(e.target.value)} type="text" className="w-full border rounded-md px-3 py-2 text-sm text-black outline-none focus:ring-1 focus:ring-black" placeholder="Crimson Red" />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-xs text-gray-500">Price (₹)</label>
-                                    <input required={!!selectedProductId} value={price} onChange={e => setPrice(e.target.value)} type="number" min="0" step="0.01" className="w-full border rounded-md px-3 py-2 text-sm text-black outline-none focus:ring-1 focus:ring-black" placeholder="15000" />
-                                </div>
-                                <div className="space-y-1 flex flex-col justify-end h-full mb-1">
-                                    <label className="flex items-center gap-2 cursor-pointer mt-5">
-                                        <input type="checkbox" checked={isNegotiable} onChange={e => setIsNegotiable(e.target.checked)} className="w-4 h-4 text-black focus:ring-black border-gray-300 rounded" />
-                                        <span className="text-sm text-gray-700">Negotiable Price</span>
-                                    </label>
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-xs text-gray-500">Stock Status</label>
-                                    <select value={stockStatus} onChange={e => setStockStatus(e.target.value)} className="w-full border rounded-md px-3 py-2 text-sm text-black outline-none focus:ring-1 focus:ring-black bg-white">
-                                        <option value="in_stock">In Stock</option>
-                                        <option value="limited">Limited</option>
-                                        <option value="out_of_stock">Out of Stock</option>
-                                    </select>
-                                </div>
-                                <div className="space-y-1 md:col-span-2">
-                                    <label className="text-xs text-gray-500">Background Hex Match</label>
-                                    <div className="flex gap-2 items-center">
-                                        <input type="color" value={hexCode} onChange={e => setHexCode(e.target.value)} className="w-10 h-10 rounded cursor-pointer" />
-                                        <input value={hexCode} onChange={e => setHexCode(e.target.value)} type="text" className="w-full border rounded-md px-3 py-2 text-sm text-black outline-none font-mono uppercase" />
-                                    </div>
-                                </div>
-                                <div className="space-y-1 md:col-span-2">
-                                    <label className="text-xs text-gray-500">Variant Description (Optional)</label>
-                                    <textarea value={variantDescription} onChange={e => setVariantDescription(e.target.value)} rows={2} className="w-full border rounded-md px-3 py-2 text-sm text-black outline-none focus:ring-1 focus:ring-black resize-none" placeholder="Special details for this color..." />
-                                </div>
-                                <div className="space-y-1 md:col-span-2">
-                                    <label className="text-xs text-gray-500">Images (Max 4)</label>
-                                    <label className="w-full flex items-center justify-center gap-2 border border-dashed border-gray-300 rounded-md px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 transition">
-                                        <ImageIcon size={16} className="text-gray-400" />
-                                        <span className="truncate text-gray-800">{imageFiles.length > 0 ? `${imageFiles.length} file(s) selected` : "Select Files..."}</span>
-                                        <input required={!editingVariantId && (!!selectedProductId || !!colorName)} type="file" multiple accept="image/*" onChange={(e) => setImageFiles(Array.from(e.target.files || []).slice(0,4))} className="hidden" />
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex gap-3 justify-end">
-                            <button type="button" onClick={() => { setIsAddMode(false); resetForm(); }} className="px-4 py-2 border rounded-md text-sm font-medium hover:bg-gray-50 text-gray-600">Cancel</button>
-                            <button disabled={uploading} type="submit" className="px-4 py-2 bg-black text-white rounded-md text-sm font-medium hover:bg-gray-800 disabled:opacity-50">
-                                {uploading ? "Saving & Uploading..." : "Save to Database"}
-                            </button>
-                        </div>
-                    </form>
-                </div>
+            {/* Variants */}
+            {product.variants && product.variants.length > 0 && (
+              <div className="space-y-2 mb-4">
+                {product.variants.map(variant => (
+                  <div key={variant.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-6 h-6 rounded border border-gray-300"
+                        style={{ backgroundColor: variant.hex_code }}
+                      />
+                      <span className="text-sm">{variant.color}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="number"
+                        value={variant.quantity}
+                        onChange={(e) => handleUpdateStock(variant.id, parseInt(e.target.value))}
+                        className="w-16 px-2 py-1 text-sm border border-gray-200 rounded"
+                      />
+                      <button
+                        onClick={() => handleDeleteVariant(variant.id)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
 
-            {/* List Current Inventory */}
-            {loading ? (
-                <div className="py-12 text-center text-gray-400">Loading catalog...</div>
-            ) : products.length === 0 ? (
-                <div className="py-12 flex flex-col items-center justify-center text-gray-400 gap-4">
-                    <PackageSearch size={48} className="opacity-20" />
-                    <p>No products in database. Add one above.</p>
-                </div>
-            ) : (
-                <div className="flex flex-col gap-6">
-                    {products.map(product => (
-                        <div key={product.id} className="border border-gray-200 rounded-lg overflow-hidden">
-                            <div className="bg-gray-50 px-4 py-3 border-b flex justify-between items-center">
-                                <div>
-                                    <h3 className="font-serif text-lg font-medium text-gray-900">{product.name}</h3>
-                                    <p className="text-xs text-gray-500 mt-1 max-w-xl truncate">{product.description}</p>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button 
-                                        onClick={() => { 
-                                            setIsAddMode(true); 
-                                            setSelectedProductId(product.id); 
-                                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                                        }}
-                                        className="text-xs flex items-center gap-1 bg-white border border-gray-200 px-3 py-1.5 rounded hover:bg-gray-50"
-                                    >
-                                        <Plus size={14}/> Add Color
-                                    </button>
-                                    <button onClick={() => handleDeleteProduct(product.id)} className="text-red-600 hover:bg-red-50 p-1.5 rounded transition">
-                                        <Trash2 size={16}/>
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                {product.product_variants?.map((variant: any) => (
-                                    <div key={variant.id} className="border border-gray-100 rounded-md p-3 relative group flex flex-col">
-                                        <div className="aspect-square w-full rounded-md overflow-hidden bg-gray-100 mb-3 relative">
-                                            <img src={variant.image_url} alt={variant.color_name} className="w-full h-full object-cover" />
-                                            <div className="absolute top-2 left-2 w-4 h-4 rounded-full border border-white/50 shadow-sm" style={{ backgroundColor: variant.hex_code }} />
-                                            
-                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
-                                                <button onClick={() => handleEditVariantClick(product, variant)} className="p-2 bg-white text-black rounded-full hover:bg-gray-200 shadow-sm" title="Edit Color Details">
-                                                    <Edit3 size={14} />
-                                                </button>
-                                                <button onClick={() => handleDeleteVariant(variant.id)} className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 shadow-sm" title="Delete Color Variant">
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="flex justify-between items-end mt-auto">
-                                            <div>
-                                                <div className="font-medium text-sm text-gray-900">{variant.color_name}</div>
-                                                <div className="text-xs text-gray-500 mt-1">₹{variant.price ? variant.price.toLocaleString('en-IN') : '--'} {variant.is_negotiable && '(Neg)'}</div>
-                                                <select 
-                                                    value={variant.stock_status}
-                                                    onChange={(e) => handleUpdateStock(variant.id, e.target.value)}
-                                                    className={`text-xs mt-1 bg-transparent border-0 p-0 font-medium focus:ring-0 ${variant.stock_status === 'in_stock' ? 'text-green-600' : variant.stock_status === 'limited' ? 'text-amber-600' : 'text-red-600'}`}
-                                                >
-                                                    <option value="in_stock" className="text-black">In Stock</option>
-                                                    <option value="limited" className="text-black">Limited Stock</option>
-                                                    <option value="out_of_stock" className="text-black">Out of Stock</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                                {(!product.product_variants || product.product_variants.length === 0) && (
-                                    <div className="text-sm text-gray-400 italic py-4 col-span-full">No active colors for this saree.</div>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
+            <button
+              onClick={() => {
+                setSelectedProduct(product);
+                setShowVariantForm(true);
+                setVariantForm({ color: "", hex_code: "#000000", size: "", price: "", quantity: 0, is_negotiable: false });
+              }}
+              className="w-full text-sm text-blue-600 hover:text-blue-800 font-medium"
+            >
+              + Add Variant
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {filteredProducts.length === 0 && (
+        <div className="text-center py-12">
+          <Package size={48} className="mx-auto text-gray-300 mb-4" />
+          <p className="text-gray-500">No products found</p>
         </div>
-    );
+      )}
+
+      {/* Product Form Modal */}
+      {showProductForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold mb-6">
+              {editingProduct ? "Edit Product" : "Create New Product"}
+            </h2>
+            <form onSubmit={editingProduct ? handleUpdateProduct : handleCreateProduct} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Product Name *</label>
+                <input
+                  type="text"
+                  value={productForm.name}
+                  onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                  required
+                  maxLength={255}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Description</label>
+                <textarea
+                  value={productForm.description}
+                  onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                  maxLength={2000}
+                  rows={4}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Category</label>
+                <input
+                  type="text"
+                  value={productForm.category}
+                  onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="featured"
+                  checked={productForm.featured}
+                  onChange={(e) => setProductForm({ ...productForm, featured: e.target.checked })}
+                  className="w-4 h-4"
+                />
+                <label htmlFor="featured" className="text-sm font-medium">Featured Product</label>
+              </div>
+
+              {productForm.featured && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Display Order</label>
+                  <input
+                    type="number"
+                    value={productForm.display_order}
+                    onChange={(e) => setProductForm({ ...productForm, display_order: parseInt(e.target.value) })}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                  />
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowProductForm(false);
+                    setEditingProduct(null);
+                  }}
+                  className="flex-1 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition"
+                >
+                  {editingProduct ? "Update Product" : "Create Product"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Variant Form Modal */}
+      {showVariantForm && selectedProduct && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold mb-6">
+              Add Variant to {selectedProduct.name}
+            </h2>
+            <form onSubmit={handleCreateVariant} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium mb-2">Color Name *</label>
+                <input
+                  type="text"
+                  value={variantForm.color}
+                  onChange={(e) => setVariantForm({ ...variantForm, color: e.target.value })}
+                  required
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                />
+              </div>
+
+              <ColorPicker
+                value={variantForm.hex_code}
+                onChange={(hex) => setVariantForm({ ...variantForm, hex_code: hex })}
+                label="Color *"
+              />
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Size</label>
+                <input
+                  type="text"
+                  value={variantForm.size}
+                  onChange={(e) => setVariantForm({ ...variantForm, size: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Price (₹) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={variantForm.price}
+                  onChange={(e) => setVariantForm({ ...variantForm, price: e.target.value })}
+                  required
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Stock Quantity</label>
+                <input
+                  type="number"
+                  value={variantForm.quantity}
+                  onChange={(e) => setVariantForm({ ...variantForm, quantity: parseInt(e.target.value) })}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="negotiable"
+                  checked={variantForm.is_negotiable}
+                  onChange={(e) => setVariantForm({ ...variantForm, is_negotiable: e.target.checked })}
+                  className="w-4 h-4"
+                />
+                <label htmlFor="negotiable" className="text-sm font-medium">Price is Negotiable</label>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Images (up to 4)</label>
+                <ImageUploader
+                  maxImages={4}
+                  onImagesChange={setVariantImages}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowVariantForm(false);
+                    setSelectedProduct(null);
+                  }}
+                  className="flex-1 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition"
+                >
+                  Create Variant
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

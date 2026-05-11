@@ -2,14 +2,38 @@ import { Suspense } from "react";
 import ShopGridClient from "@/components/ShopGridClient";
 import { Metadata } from "next";
 
+const BASE_URL = "https://savisanjucollections.vercel.app";
+
 export const metadata: Metadata = {
-    title: "All Sarees | SaviSanjuCollections",
-    description: "Explore our complete premium collection of all elegant sarees.",
+  title: "Buy Premium Sarees Online – Kanjivaram & Banarasi Collection",
+  description:
+    "Shop our complete collection of handwoven Kanjivaram and Banarasi sarees. Authentic luxury sarees with pan-India delivery. Price negotiable.",
+  alternates: { canonical: `${BASE_URL}/shop` },
+  openGraph: {
+    title: "Buy Premium Sarees Online | SaviSanju Collections",
+    description:
+      "Authentic handwoven Kanjivaram and Banarasi sarees. Pan-India delivery.",
+    url: `${BASE_URL}/shop`,
+    type: "website",
+  },
+};
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
+    { "@type": "ListItem", position: 2, name: "All Sarees", item: `${BASE_URL}/shop` },
+  ],
 };
 
 export default function AllShopPage() {
-    return (
-        <main className="min-h-screen bg-[#FAF9F6]">
+  return (
+    <main className="min-h-screen bg-[#FAF9F6]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
             {/* Elegant Header */}
             <header className="w-full py-8 border-b border-[#EAE6D9] bg-white sticky top-0 z-40 flex items-center justify-between px-8 md:px-16">
                 <a href="/" className="text-2xl font-serif tracking-widest text-[#1A1A1A]">

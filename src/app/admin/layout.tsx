@@ -1,41 +1,67 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LayoutDashboard, Package, ShoppingBag, Lock } from "lucide-react";
+import { apiClient } from "@/lib/api/client";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [email, setEmail] = useState("admin@savisanju.com");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    // Check local storage for session on mount
-    const session = localStorage.getItem("savi_admin_auth");
-    if (session === "authenticated") {
-      setIsAuthenticated(true);
-    }
-    setLoading(false);
+    // Check authentication status by calling a protected endpoint
+    checkAuth();
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simple secure gate. In production, use Supabase Auth to issue secure JWT cookies.
-    // This prevents unauthorized access to the client routes.
-    const adminPass = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "SAVI2026";
-    if (password === adminPass) {
-      localStorage.setItem("savi_admin_auth", "authenticated");
-      setIsAuthenticated(true);
-      setError("");
-    } else {
-      setError("Incorrect Admin Password.");
+  const checkAuth = async () => {
+    try {
+      const { data, error } = await apiClient.getAdminOrders();
+      
+      if (!error && data) {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
+    } catch (error) {
+      setIsAuthenticated(false);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("savi_admin_auth");
-    setIsAuthenticated(false);
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    
+    try {
+      const { data, error } = await apiClient.adminLogin(email, password);
+
+      if (!error && data) {
+        setIsAuthenticated(true);
+        setPassword("");
+        router.refresh(); // Refresh to load admin content
+      } else {
+        setError(error?.message || "Invalid credentials");
+      }
+    } catch (error) {
+      setError("An error occurred. Please try again.");
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await apiClient.logout();
+      setIsAuthenticated(false);
+      router.refresh();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   if (loading) return null; // Prevent hydration flash
@@ -50,16 +76,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
           </div>
           <h1 className="text-2xl font-serif text-center mb-2 text-gray-900">Admin Access</h1>
-          <p className="text-center text-gray-500 text-sm mb-8">Enter the master password to manage inventory and view orders.</p>
+          <p className="text-center text-gray-500 text-sm mb-8">Enter your credentials to manage inventory and view orders.</p>
           
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
+            <div>
+                <input 
+                    type="email" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email" 
+                    className="w-full border border-gray-200 px-4 py-3 rounded-md outline-none focus:ring-2 focus:ring-black bg-gray-50/50"
+                    autoComplete="email"
+                />
+            </div>
             <div>
                 <input 
                     type="password" 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter Password" 
+                    placeholder="Password" 
                     className="w-full border border-gray-200 px-4 py-3 rounded-md outline-none focus:ring-2 focus:ring-black bg-gray-50/50"
+                    autoComplete="current-password"
                 />
             </div>
             {error && <p className="text-red-500 text-xs text-center">{error}</p>}

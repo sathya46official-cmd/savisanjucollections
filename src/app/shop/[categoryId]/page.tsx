@@ -1,17 +1,50 @@
 import { Suspense } from "react";
 import ShopGridClient from "@/components/ShopGridClient";
-import { supabase } from "@/lib/supabase/client";
 import { Metadata } from "next";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+const BASE_URL = "https://savisanjucollections.vercel.app";
 
 export async function generateMetadata(
     { params }: { params: Promise<{ categoryId: string }> }
 ): Promise<Metadata> {
     const { categoryId } = await params;
-    const { data } = await supabase.from('products').select('name').eq('id', categoryId).single();
+    
+    try {
+        const response = await fetch(`${API_URL}/api/products/${categoryId}`, { cache: 'no-store' });
+        if (response.ok) {
+            const data = await response.json();
+            const title = `${data?.name || 'Shop'} Sarees`;
+            const description = `Buy authentic handwoven ${data?.name || ''} sarees online. Premium quality, pan-India delivery. ${data?.description || 'Explore our luxury collection.'}`;
+            const canonicalUrl = `${BASE_URL}/shop/${categoryId}`;
+            return {
+                title,
+                description,
+                alternates: { canonical: canonicalUrl },
+                openGraph: {
+                    title: `${title} | SaviSanju Collections`,
+                    description,
+                    url: canonicalUrl,
+                    type: "website",
+                    siteName: "SaviSanju Collections",
+                    locale: "en_IN",
+                },
+                twitter: {
+                    card: "summary_large_image",
+                    title,
+                    description,
+                },
+            };
+        }
+    } catch (error) {
+        console.error('Error fetching category metadata:', error);
+    }
     
     return {
-        title: `${data?.name || 'Shop'} | SaviSanjuCollections`,
-        description: `Explore our premium collection of elegant ${data?.name || ''} sarees.`,
+        title: 'Shop Sarees Online',
+        description: 'Explore our premium collection of elegant handwoven sarees.',
+        alternates: { canonical: `${BASE_URL}/shop` },
     };
 }
 
@@ -19,11 +52,45 @@ export default async function ShopCategoryPage(
     { params }: { params: Promise<{ categoryId: string }> }
 ) {
     const { categoryId } = await params;
+    
     // We pre-fetch the category name on the server
-    const { data: category } = await supabase.from('products').select('*').eq('id', categoryId).single();
+    let category = null;
+    try {
+        const response = await fetch(`${API_URL}/api/products/${categoryId}`, { cache: 'no-store' });
+        if (response.ok) {
+            category = await response.json();
+        }
+    } catch (error) {
+        console.error('Error fetching category:', error);
+    }
 
     return (
         <main className="min-h-screen bg-[#FAF9F6]">
+            {/* Breadcrumb + ItemList structured data */}
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@graph": [
+                            {
+                                "@type": "BreadcrumbList",
+                                itemListElement: [
+                                    { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
+                                    { "@type": "ListItem", position: 2, name: "All Sarees", item: `${BASE_URL}/shop` },
+                                    { "@type": "ListItem", position: 3, name: category?.name || "Collection", item: `${BASE_URL}/shop/${categoryId}` },
+                                ],
+                            },
+                            {
+                                "@type": "CollectionPage",
+                                name: `${category?.name || "Sarees"} Collection`,
+                                description: category?.description || "Premium handwoven sarees",
+                                url: `${BASE_URL}/shop/${categoryId}`,
+                            },
+                        ],
+                    }),
+                }}
+            />
             {/* Elegant Header */}
             <header className="w-full py-8 border-b border-[#EAE6D9] bg-white sticky top-0 z-40 flex items-center justify-between px-8 md:px-16">
                 <a href="/" className="text-2xl font-serif tracking-widest text-[#1A1A1A]">
