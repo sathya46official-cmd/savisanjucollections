@@ -7,8 +7,25 @@ import ProductFilters from "./ProductFilters";
 import ProductSort, { SortOption } from "./ProductSort";
 import { Heart, ShoppingBag, Filter, X } from "lucide-react";
 
+interface ShopVariant {
+    id: string;
+    product_id: string;
+    color: string;
+    color_name: string;
+    hex_code: string;
+    image_url: string;
+    stock_status: string;
+    fabric: string;
+    quantity?: number;
+    price?: number;
+    is_negotiable?: boolean;
+    created_at?: string | number;
+    product_name?: string;
+    product?: { id: string; name: string };
+}
+
 export default function ShopGridClient({ categoryId, categoryName }: { categoryId: string, categoryName: string }) {
-    const [variants, setVariants] = useState<any[]>([]);
+    const [variants, setVariants] = useState<ShopVariant[]>([]);
     const [loading, setLoading] = useState(true);
     
     // Filter State
@@ -25,28 +42,28 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
     
     // Checkout Modal State
     const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-    const [selectedVariantForCheckout, setSelectedVariantForCheckout] = useState<any | null>(null);
+    const [selectedVariantForCheckout, setSelectedVariantForCheckout] = useState<ShopVariant | null>(null);
 
     useEffect(() => {
         const fetchVariants = async () => {
             if (categoryId === 'all') {
                 // Fetch all variants
-                const { data, error } = await apiClient.getAllVariants();
+                const { data } = await apiClient.getAllVariants();
                 if (data) {
                     // Transform data to match expected format
-                    const transformedData = data.map((v: any) => ({
+                    const transformedData: ShopVariant[] = (data as ShopVariant[]).map((v) => ({
                         ...v,
                         color_name: v.color,
                         hex_code: v.hex_code || '#000000',
-                        stock_status: v.quantity > 0 ? 'in_stock' : 'out_of_stock',
-                        product: { name: v.product_name },
+                        stock_status: (v.quantity ?? 0) > 0 ? 'in_stock' : 'out_of_stock',
+                        product: { id: v.product_id, name: v.product_name ?? '' },
                         fabric: v.fabric || 'Silk' // Default fabric if not in DB
                     }));
                     setVariants(transformedData);
                     
                     // Set initial price range based on data
                     if (transformedData.length > 0) {
-                        const prices = transformedData.map((v: any) => v.price || 0);
+                        const prices = transformedData.map((v) => v.price || 0);
                         const min = Math.min(...prices);
                         const max = Math.max(...prices);
                         setPriceRange([min, max]);
@@ -54,15 +71,16 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
                 }
             } else {
                 // Fetch variants for specific product
-                const { data, error } = await apiClient.getProduct(categoryId);
-                if (data && data.variants) {
+                const { data } = await apiClient.getProduct(categoryId);
+                const product = data as { name?: string; variants?: ShopVariant[] } | null;
+                if (product && product.variants) {
                     // Transform data to match expected format
-                    const transformedData = data.variants.map((v: any) => ({
+                    const transformedData: ShopVariant[] = product.variants.map((v) => ({
                         ...v,
                         color_name: v.color,
                         hex_code: v.hex_code || '#000000',
-                        stock_status: v.quantity > 0 ? 'in_stock' : 'out_of_stock',
-                        product: { name: data.name },
+                        stock_status: (v.quantity ?? 0) > 0 ? 'in_stock' : 'out_of_stock',
+                        product: { id: categoryId, name: product.name ?? '' },
                         product_id: categoryId,
                         fabric: v.fabric || 'Silk'
                     }));
@@ -70,7 +88,7 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
                     
                     // Set initial price range based on data
                     if (transformedData.length > 0) {
-                        const prices = transformedData.map((v: any) => v.price || 0);
+                        const prices = transformedData.map((v) => v.price || 0);
                         const min = Math.min(...prices);
                         const max = Math.max(...prices);
                         setPriceRange([min, max]);
@@ -111,9 +129,9 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
 
     // Filter and sort variants
     const filteredAndSortedVariants = useMemo(() => {
-        let filtered = variants.filter(v => {
+        const filtered = variants.filter(v => {
             // Price filter
-            if (v.price < priceRange[0] || v.price > priceRange[1]) return false;
+            if ((v.price ?? 0) < priceRange[0] || (v.price ?? 0) > priceRange[1]) return false;
             
             // Fabric filter
             if (selectedFabrics.length > 0 && !selectedFabrics.includes(v.fabric)) return false;

@@ -31,7 +31,8 @@ export default function HeroCanvas() {
                 // Limited CPU cores
                 (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) ||
                 // Limited memory (< 4GB)
-                ((navigator as any).deviceMemory && (navigator as any).deviceMemory < 4) ||
+                ((navigator as Navigator & { deviceMemory?: number }).deviceMemory !== undefined &&
+                    (navigator as Navigator & { deviceMemory?: number }).deviceMemory! < 4) ||
                 // Mobile device
                 /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             

@@ -78,9 +78,9 @@ export default function ProductCardCustomer({ product, onAddToCart }: ProductCar
       
       alert('Added to cart!');
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error adding to cart:', error);
-      alert(error.message || 'Failed to add to cart');
+      alert(error instanceof Error ? error.message : 'Failed to add to cart');
     }
   };
 
@@ -115,9 +115,9 @@ export default function ProductCardCustomer({ product, onAddToCart }: ProductCar
 
       alert('You will be notified when this item is back in stock!');
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error requesting notification:', error);
-      alert(error.message || 'Failed to request notification');
+      alert(error instanceof Error ? error.message : 'Failed to request notification');
     } finally {
       setNotifying(false);
     }

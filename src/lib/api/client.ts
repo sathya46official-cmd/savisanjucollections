@@ -41,28 +41,28 @@ class APIClient {
   // Products
   async getProducts(featured?: boolean) {
     const endpoint = featured ? '/api/products?featured=true' : '/api/products';
-    return this.request<any[]>(endpoint);
+    return this.request<unknown[]>(endpoint);
   }
 
   async getProduct(id: string) {
-    return this.request<any>(`/api/products/${id}`);
+    return this.request<unknown>(`/api/products/${id}`);
   }
 
   async getProductVariants(productId: string) {
-    return this.request<any[]>(`/api/products/${productId}/variants`);
+    return this.request<unknown[]>(`/api/products/${productId}/variants`);
   }
 
   async getVariant(variantId: string) {
-    return this.request<any>(`/api/products/variants/${variantId}`);
+    return this.request<unknown>(`/api/products/variants/${variantId}`);
   }
 
   async getAllVariants() {
-    return this.request<any[]>('/api/products/variants/all');
+    return this.request<unknown[]>('/api/products/variants/all');
   }
 
   // Cart
   async getCart() {
-    return this.request<any>('/api/cart');
+    return this.request<unknown>('/api/cart');
   }
 
   async addToCart(variantId: string, quantity: number) {
@@ -87,7 +87,7 @@ class APIClient {
   }
 
   // Orders
-  async createOrder(orderData: any) {
+  async createOrder(orderData: Record<string, unknown>) {
     return this.request('/api/orders/create', {
       method: 'POST',
       body: JSON.stringify(orderData),
@@ -95,7 +95,7 @@ class APIClient {
   }
 
   async getOrderHistory() {
-    return this.request<any[]>('/api/orders/history');
+    return this.request<unknown[]>('/api/orders/history');
   }
 
   async cancelOrder(orderId: string) {
@@ -193,11 +193,11 @@ class APIClient {
   // Order Management
   async getAdminOrders(status?: string) {
     const endpoint = status ? `/api/admin/orders?status=${status}` : '/api/admin/orders';
-    return this.request<any[]>(endpoint);
+    return this.request<unknown[]>(endpoint);
   }
 
   async getOrder(orderId: string) {
-    return this.request<any>(`/api/admin/orders/${orderId}`);
+    return this.request<unknown>(`/api/admin/orders/${orderId}`);
   }
 
   async updateOrderStatus(orderId: string, status: string, notes?: string) {
@@ -242,7 +242,7 @@ class APIClient {
   }
 
   // Auth
-  async register(userData: any) {
+  async register(userData: Record<string, unknown>) {
     return this.request('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),

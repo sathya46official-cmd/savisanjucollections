@@ -4,9 +4,21 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { apiClient } from "@/lib/api/client";
 
+interface CatalogVariant {
+    image_url?: string;
+    [key: string]: unknown;
+}
+
+interface CatalogProduct {
+    id: string;
+    name: string;
+    variants: CatalogVariant[];
+    [key: string]: unknown;
+}
+
 export default function CollectionAccordion() {
     const router = useRouter();
-    const [products, setProducts] = useState<any[]>([]);
+    const [products, setProducts] = useState<CatalogProduct[]>([]);
 
     useEffect(() => {
         const fetchCatalog = async () => {
@@ -15,14 +27,14 @@ export default function CollectionAccordion() {
             
             if (data) {
                 // Filter out products with no variants
-                const activeProducts = data.filter((p: any) => p.variants && p.variants.length > 0);
+                const activeProducts = (data as CatalogProduct[]).filter((p) => p.variants && p.variants.length > 0);
                 setProducts(activeProducts);
             }
         };
         fetchCatalog();
     }, []);
 
-    const handleProductClick = (product: any) => {
+    const handleProductClick = (product: CatalogProduct) => {
         // Navigate to the Product Listing Page grid for this specific category
         router.push(`/shop/${product.id}`);
     };

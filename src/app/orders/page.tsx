@@ -120,9 +120,9 @@ export default function OrdersPage() {
 
       alert('Order cancelled successfully');
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error cancelling order:', error);
-      alert(error.message || 'Failed to cancel order');
+      alert(error instanceof Error ? error.message : 'Failed to cancel order');
     } finally {
       setCancelling(null);
     }

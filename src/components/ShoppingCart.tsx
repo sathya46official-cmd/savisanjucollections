@@ -121,9 +121,9 @@ export default function ShoppingCart({ isOpen, onClose }: ShoppingCartProps) {
         };
       });
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating quantity:', error);
-      alert(error.message || 'Failed to update quantity');
+      alert(error instanceof Error ? error.message : 'Failed to update quantity');
     } finally {
       setUpdating(null);
     }

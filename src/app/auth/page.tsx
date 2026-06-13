@@ -115,9 +115,9 @@ function AuthForm() {
         router.push(redirectTo);
       }, 1000);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
-      setError(error.message || 'Login failed. Please try again.');
+      setError(error instanceof Error ? error.message : 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -190,9 +190,9 @@ function AuthForm() {
         setSuccess(null);
       }, 3000);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Registration error:', error);
-      setError(error.message || 'Registration failed. Please try again.');
+      setError(error instanceof Error ? error.message : 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
