@@ -72,17 +72,17 @@ class APIClient {
     });
   }
 
-  async updateCartItem(itemId: string, quantity: number) {
+  async updateCartItem(variantId: string, quantity: number) {
     return this.request('/api/cart/update', {
       method: 'PUT',
-      body: JSON.stringify({ item_id: itemId, quantity }),
+      body: JSON.stringify({ variant_id: variantId, quantity }),
     });
   }
 
-  async removeFromCart(itemId: string) {
+  async removeFromCart(variantId: string) {
     return this.request('/api/cart/remove', {
       method: 'DELETE',
-      body: JSON.stringify({ item_id: itemId }),
+      body: JSON.stringify({ variant_id: variantId }),
     });
   }
 
@@ -114,7 +114,7 @@ class APIClient {
 
   // Admin
   async adminLogin(email: string, password: string) {
-    return this.request('/api/admin/login', {
+    return this.request('/api/auth/admin/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });

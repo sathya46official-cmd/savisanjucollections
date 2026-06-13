@@ -55,7 +55,7 @@ export default function ProductCardCustomer({ product, onAddToCart }: ProductCar
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          variantId: selectedVariant.id,
+          variant_id: selectedVariant.id,
           quantity: 1
         })
       });
