@@ -4,36 +4,9 @@ import type { NextRequest } from 'next/server';
 // Backend API URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-function addSecurityHeaders(response: NextResponse): NextResponse {
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('X-XSS-Protection', '1; mode=block');
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-  
-  const isProduction = process.env.NODE_ENV === 'production';
-  const domain = process.env.NEXT_PUBLIC_DOMAIN || '';
-  const baseUrl = isProduction ? `https://${domain}` : 'http://localhost:3000';
-
-  response.headers.set(
-    'Content-Security-Policy',
-    [
-      "default-src 'self'",
-      `script-src 'self' 'unsafe-inline' 'unsafe-eval'`,
-      `style-src 'self' 'unsafe-inline'`,
-      `img-src 'self' data: blob: https:`,
-      `font-src 'self' data:`,
-      `connect-src 'self' ${baseUrl} https://*.supabase.co wss://*.supabase.co`,
-      "frame-ancestors 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-    ].join('; ')
-  );
-
-  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  
-  return response;
-}
+// NOTE: All security headers (CSP, HSTS, X-Frame-Options, nosniff, etc.) are set
+// globally in next.config.ts `headers()` so they apply to every route. This
+// middleware is responsible only for authentication/authorization redirects.
 
 /**
  * Verify JWT token by calling backend
@@ -87,18 +60,18 @@ export async function middleware(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = '/auth';
       url.searchParams.set('redirect', pathname);
-      return addSecurityHeaders(NextResponse.redirect(url));
+      return NextResponse.redirect(url);
     }
 
     if (auth.role !== 'admin') {
-      // Not admin - redirect to home with error
+      // Not admin - redirect to home
       const url = request.nextUrl.clone();
       url.pathname = '/';
-      return addSecurityHeaders(NextResponse.redirect(url));
+      return NextResponse.redirect(url);
     }
 
     // Admin authenticated - allow
-    return addSecurityHeaders(NextResponse.next());
+    return NextResponse.next();
   }
 
   // Protected user routes - require authentication
@@ -110,15 +83,15 @@ export async function middleware(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = '/auth';
       url.searchParams.set('redirect', pathname);
-      return addSecurityHeaders(NextResponse.redirect(url));
+      return NextResponse.redirect(url);
     }
 
     // Authenticated - allow
-    return addSecurityHeaders(NextResponse.next());
+    return NextResponse.next();
   }
 
   // Public routes - allow
-  return addSecurityHeaders(NextResponse.next());
+  return NextResponse.next();
 }
 
 /**

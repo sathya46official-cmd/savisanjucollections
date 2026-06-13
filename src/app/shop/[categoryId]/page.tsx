@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import ShopGridClient from "@/components/ShopGridClient";
 import { Metadata } from "next";
+import { safeJsonLd } from "@/lib/seo/jsonLd";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -71,7 +72,7 @@ export default async function ShopCategoryPage(
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{
-                    __html: JSON.stringify({
+                    __html: safeJsonLd({
                         "@context": "https://schema.org",
                         "@graph": [
                             {

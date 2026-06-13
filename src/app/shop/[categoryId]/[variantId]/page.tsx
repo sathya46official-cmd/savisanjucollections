@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ProductDetailClient from "./ProductDetailClient";
+import { safeJsonLd } from "@/lib/seo/jsonLd";
 
 const BASE_URL = "https://savisanjucollections.vercel.app";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -120,11 +121,11 @@ export default async function ProductDetailPage({ params }: PageProps) {
       <>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(productSchema) }}
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbSchema) }}
         />
         <ProductDetailClient
           product={product}

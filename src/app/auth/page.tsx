@@ -16,7 +16,11 @@ type FormMode = 'login' | 'register';
 function AuthForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '/';
+  // Only allow redirects to internal, same-origin paths. A value like
+  // "https://evil.com", "//evil.com" or "/\evil.com" is rejected to prevent
+  // an open-redirect (post-login phishing) via ?redirect=...
+  const rawRedirect = searchParams.get('redirect');
+  const redirectTo = rawRedirect && /^\/(?![/\\])/.test(rawRedirect) ? rawRedirect : '/';
 
   // Form state
   const [mode, setMode] = useState<FormMode>('login');
