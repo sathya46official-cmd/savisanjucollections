@@ -117,7 +117,10 @@ function AuthForm() {
 
     } catch (error: unknown) {
       console.error('Login error:', error);
-      setError(error instanceof Error ? error.message : 'Login failed. Please try again.');
+      const message = error instanceof Error ? error.message : 'Login failed. Please try again.';
+      setError(message === 'Failed to fetch'
+        ? 'Cannot reach the server. Please check your internet connection or try again later.'
+        : message);
     } finally {
       setLoading(false);
     }
@@ -192,7 +195,10 @@ function AuthForm() {
 
     } catch (error: unknown) {
       console.error('Registration error:', error);
-      setError(error instanceof Error ? error.message : 'Registration failed. Please try again.');
+      const message = error instanceof Error ? error.message : 'Registration failed. Please try again.';
+      setError(message === 'Failed to fetch'
+        ? 'Cannot reach the server. Please check your internet connection or try again later.'
+        : message);
     } finally {
       setLoading(false);
     }
@@ -283,7 +289,7 @@ function AuthForm() {
                     type="email"
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-gray-900"
                     placeholder="you@example.com"
                     required
                   />
@@ -302,7 +308,7 @@ function AuthForm() {
                     type={showPassword ? 'text' : 'password'}
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
-                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-gray-900"
                     placeholder="••••••••"
                     required
                   />
@@ -349,7 +355,7 @@ function AuthForm() {
                     type="text"
                     value={registerName}
                     onChange={(e) => setRegisterName(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-gray-900"
                     placeholder="John Doe"
                     required
                   />
@@ -368,7 +374,7 @@ function AuthForm() {
                     type="email"
                     value={registerEmail}
                     onChange={(e) => setRegisterEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-gray-900"
                     placeholder="you@example.com"
                     required
                   />
@@ -387,7 +393,7 @@ function AuthForm() {
                     type="tel"
                     value={registerPhone}
                     onChange={(e) => setRegisterPhone(e.target.value.replace(/\D/g, ''))}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-gray-900"
                     placeholder="9876543210"
                     maxLength={10}
                     required
@@ -407,7 +413,7 @@ function AuthForm() {
                     type={showPassword ? 'text' : 'password'}
                     value={registerPassword}
                     onChange={(e) => setRegisterPassword(e.target.value)}
-                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-gray-900"
                     placeholder="••••••••"
                     required
                   />

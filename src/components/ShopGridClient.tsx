@@ -27,6 +27,7 @@ interface ShopVariant {
 export default function ShopGridClient({ categoryId, categoryName }: { categoryId: string, categoryName: string }) {
     const [variants, setVariants] = useState<ShopVariant[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     
     // Filter State
     const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
@@ -46,56 +47,74 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
 
     useEffect(() => {
         const fetchVariants = async () => {
-            if (categoryId === 'all') {
-                // Fetch all variants
-                const { data } = await apiClient.getAllVariants();
-                if (data) {
-                    // Transform data to match expected format
-                    const transformedData: ShopVariant[] = (data as ShopVariant[]).map((v) => ({
-                        ...v,
-                        color_name: v.color,
-                        hex_code: v.hex_code || '#000000',
-                        stock_status: (v.quantity ?? 0) > 0 ? 'in_stock' : 'out_of_stock',
-                        product: { id: v.product_id, name: v.product_name ?? '' },
-                        fabric: v.fabric || 'Silk' // Default fabric if not in DB
-                    }));
-                    setVariants(transformedData);
-                    
-                    // Set initial price range based on data
-                    if (transformedData.length > 0) {
-                        const prices = transformedData.map((v) => v.price || 0);
-                        const min = Math.min(...prices);
-                        const max = Math.max(...prices);
-                        setPriceRange([min, max]);
+            setLoading(true);
+            setError(null);
+            try {
+                if (categoryId === 'all') {
+                    // Fetch all variants
+                    const { data, error } = await apiClient.getAllVariants();
+                    if (error) {
+                        setError('Unable to load products. Please try again later.');
+                        setVariants([]);
+                        return;
+                    }
+                    if (data) {
+                        // Transform data to match expected format
+                        const transformedData: ShopVariant[] = (data as ShopVariant[]).map((v) => ({
+                            ...v,
+                            color_name: v.color,
+                            hex_code: v.hex_code || '#000000',
+                            stock_status: (v.quantity ?? 0) > 0 ? 'in_stock' : 'out_of_stock',
+                            product: { id: v.product_id, name: v.product_name ?? '' },
+                            fabric: v.fabric || 'Silk' // Default fabric if not in DB
+                        }));
+                        setVariants(transformedData);
+                        
+                        // Set initial price range based on data
+                        if (transformedData.length > 0) {
+                            const prices = transformedData.map((v) => v.price || 0);
+                            const min = Math.min(...prices);
+                            const max = Math.max(...prices);
+                            setPriceRange([min, max]);
+                        }
+                    }
+                } else {
+                    // Fetch variants for specific product
+                    const { data, error } = await apiClient.getProduct(categoryId);
+                    if (error) {
+                        setError('Unable to load products. Please try again later.');
+                        setVariants([]);
+                        return;
+                    }
+                    const product = data as { name?: string; variants?: ShopVariant[] } | null;
+                    if (product && product.variants) {
+                        // Transform data to match expected format
+                        const transformedData: ShopVariant[] = product.variants.map((v) => ({
+                            ...v,
+                            color_name: v.color,
+                            hex_code: v.hex_code || '#000000',
+                            stock_status: (v.quantity ?? 0) > 0 ? 'in_stock' : 'out_of_stock',
+                            product: { id: categoryId, name: product.name ?? '' },
+                            product_id: categoryId,
+                            fabric: v.fabric || 'Silk'
+                        }));
+                        setVariants(transformedData);
+                        
+                        // Set initial price range based on data
+                        if (transformedData.length > 0) {
+                            const prices = transformedData.map((v) => v.price || 0);
+                            const min = Math.min(...prices);
+                            const max = Math.max(...prices);
+                            setPriceRange([min, max]);
+                        }
                     }
                 }
-            } else {
-                // Fetch variants for specific product
-                const { data } = await apiClient.getProduct(categoryId);
-                const product = data as { name?: string; variants?: ShopVariant[] } | null;
-                if (product && product.variants) {
-                    // Transform data to match expected format
-                    const transformedData: ShopVariant[] = product.variants.map((v) => ({
-                        ...v,
-                        color_name: v.color,
-                        hex_code: v.hex_code || '#000000',
-                        stock_status: (v.quantity ?? 0) > 0 ? 'in_stock' : 'out_of_stock',
-                        product: { id: categoryId, name: product.name ?? '' },
-                        product_id: categoryId,
-                        fabric: v.fabric || 'Silk'
-                    }));
-                    setVariants(transformedData);
-                    
-                    // Set initial price range based on data
-                    if (transformedData.length > 0) {
-                        const prices = transformedData.map((v) => v.price || 0);
-                        const min = Math.min(...prices);
-                        const max = Math.max(...prices);
-                        setPriceRange([min, max]);
-                    }
-                }
+            } catch {
+                setError('Unable to load products. Please try again later.');
+                setVariants([]);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
         fetchVariants();
     }, [categoryId]);
@@ -276,7 +295,17 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
 
                     {/* Product Grid */}
                     <div className="flex-1 overflow-y-auto px-6 py-8">
-                        {filteredAndSortedVariants.length === 0 ? (
+                        {error ? (
+                            <div className="flex flex-col items-center justify-center h-full text-center px-6">
+                                <p className="text-red-600 text-lg mb-4">{error}</p>
+                                <button
+                                    onClick={() => window.location.reload()}
+                                    className="px-6 py-2 bg-gray-900 text-white rounded-md font-medium hover:bg-gray-800"
+                                >
+                                    Retry
+                                </button>
+                            </div>
+                        ) : filteredAndSortedVariants.length === 0 ? (
                             <div className="text-center py-20">
                                 <p className="text-gray-500 text-lg mb-4">No products found</p>
                                 <button

@@ -19,17 +19,28 @@ interface CatalogProduct {
 export default function CollectionAccordion() {
     const router = useRouter();
     const [products, setProducts] = useState<CatalogProduct[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchCatalog = async () => {
+            setLoading(true);
+            setError(null);
             // Fetch only featured products
-            const { data } = await apiClient.getProducts(true);
+            const { data, error } = await apiClient.getProducts(true);
+            
+            if (error) {
+                setError('Unable to load collections. Please try again later.');
+                setLoading(false);
+                return;
+            }
             
             if (data) {
                 // Filter out products with no variants
                 const activeProducts = (data as CatalogProduct[]).filter((p) => p.variants && p.variants.length > 0);
                 setProducts(activeProducts);
             }
+            setLoading(false);
         };
         fetchCatalog();
     }, []);
@@ -41,9 +52,17 @@ export default function CollectionAccordion() {
 
     return (
         <section id="collections" className="relative w-full h-screen bg-[#F4F2EC] overflow-hidden flex flex-col justify-center z-10">
-            {products.length === 0 ? (
+            {loading ? (
                 <div className="w-full h-full flex items-center justify-center text-gray-400 font-serif text-xl tracking-widest">
                     Loading Collection...
+                </div>
+            ) : error ? (
+                <div className="w-full h-full flex flex-col items-center justify-center text-red-600 font-serif text-xl tracking-widest px-4 text-center">
+                    <p>{error}</p>
+                </div>
+            ) : products.length === 0 ? (
+                <div className="w-full h-full flex items-center justify-center text-gray-400 font-serif text-xl tracking-widest px-4 text-center">
+                    No collections available yet.
                 </div>
             ) : (
                 <div className="w-full h-full flex items-stretch">

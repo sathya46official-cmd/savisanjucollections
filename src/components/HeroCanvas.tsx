@@ -127,9 +127,9 @@ export default function HeroCanvas() {
 
             // Optimize animation for mobile and low-performance devices
             const scrubValue = isLowPerformance ? 2 : 1; // Slower scrub on low-end devices
-            const pinDuration = isMobile ? "+=200%" : "+=300%"; // Shorter pin on mobile
+            const pinDuration = isMobile ? "+=120%" : "+=150%"; // Keep pin concise to avoid extra/duplicate scroll feel
 
-            ScrollTrigger.create({
+            const trigger = ScrollTrigger.create({
                 trigger: containerRef.current,
                 start: "top top",
                 end: pinDuration,
@@ -154,7 +154,10 @@ export default function HeroCanvas() {
             };
 
             window.addEventListener('resize', handleResize);
-            return () => window.removeEventListener('resize', handleResize);
+            return () => {
+                window.removeEventListener('resize', handleResize);
+                trigger.kill();
+            };
         },
         { scope: containerRef, dependencies: [isLoaded, images, isMobile, isLowPerformance] }
     );
