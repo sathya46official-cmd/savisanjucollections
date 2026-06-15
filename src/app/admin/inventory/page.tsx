@@ -136,7 +136,7 @@ export default function InventoryPage() {
 
     const { data, error } = await apiClient.createVariant(selectedProduct.id, {
       ...variantForm,
-      price: parseFloat(variantForm.price) * 100, // Convert to paise
+      price: parseFloat(variantForm.price),
       image_url: JSON.stringify(imageUrls)
     });
     

@@ -125,22 +125,17 @@ export default function HeroCanvas() {
             // Initial render
             render(0);
 
-            // Optimize animation for mobile and low-performance devices
-            const scrubValue = isLowPerformance ? 2 : 1; // Slower scrub on low-end devices
-            const pinDuration = isMobile ? "+=120%" : "+=150%"; // Keep pin concise to avoid extra/duplicate scroll feel
+            const scrubValue = isLowPerformance ? 2 : 1;
 
             const trigger = ScrollTrigger.create({
                 trigger: containerRef.current,
                 start: "top top",
-                end: pinDuration,
-                pin: true,
+                end: "bottom top",
                 scrub: scrubValue,
                 onUpdate: (self) => {
-                    // Reduce frame rate on low-performance devices
                     const frameSkip = isLowPerformance ? 2 : 1;
                     const frameIndex = Math.round(self.progress * (images.length - 1));
                     
-                    // Skip frames on low-end devices
                     if (frameIndex % frameSkip === 0 || frameIndex === images.length - 1) {
                         render(frameIndex);
                     }
