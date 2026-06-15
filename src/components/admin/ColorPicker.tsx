@@ -56,43 +56,48 @@ export default function ColorPicker({ value, onChange, label }: ColorPickerProps
           {label}
         </label>
       )}
-      
+
       <div className="flex gap-3 items-start">
-        {/* Color Picker */}
-        <div className="relative">
+        {/* Native Color Picker */}
+        <div className="relative shrink-0">
           <input
             type="color"
             value={hexCode}
             onChange={handleColorChange}
-            className="w-16 h-16 rounded-lg border-2 border-gray-200 cursor-pointer"
-            style={{ padding: "4px" }}
+            className="w-16 h-16 rounded-lg border-2 border-gray-300 cursor-pointer overflow-hidden p-0"
+            style={{
+              padding: 0,
+              background: 'none',
+            }}
+            aria-label="Pick a colour"
           />
         </div>
 
         {/* Hex Code Input */}
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <input
             type="text"
             value={hexCode}
             onChange={handleHexInput}
             placeholder="#000000"
             maxLength={7}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none bg-white font-mono uppercase"
           />
           {error && (
-            <p className="text-red-500 text-xs mt-1">{error}</p>
+            <p className="text-red-600 text-xs mt-1">{error}</p>
           )}
         </div>
 
         {/* Color Preview */}
         <div
-          className="w-16 h-16 rounded-lg border-2 border-gray-200"
+          className="w-16 h-16 rounded-lg border-2 border-gray-300 shrink-0"
           style={{ backgroundColor: validateHexCode(hexCode) ? hexCode : "#ffffff" }}
+          aria-hidden="true"
         />
       </div>
 
       <p className="text-xs text-gray-500">
-        Select a color or enter a hex code (e.g., #FF5733)
+        Choose a colour from the swatch or type a hex code like <code className="font-mono bg-gray-100 px-1 rounded">#FF5733</code>.
       </p>
     </div>
   );

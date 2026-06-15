@@ -219,10 +219,10 @@ export default function InventoryPage() {
       {/* Product List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredProducts.map(product => (
-          <div key={product.id} className="bg-white rounded-lg border border-gray-200 p-6">
+          <div key={product.id} className="bg-white rounded-lg border border-gray-200 p-6 text-gray-900">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h3 className="font-semibold text-lg">{product.name}</h3>
+                <h3 className="font-semibold text-lg text-gray-900">{product.name}</h3>
                 <p className="text-sm text-gray-500">{product.category || "Uncategorized"}</p>
               </div>
               <div className="flex gap-2">
@@ -316,64 +316,71 @@ export default function InventoryPage() {
 
       {/* Product Form Modal */}
       {showProductForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-6">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto text-gray-900">
+            <h2 className="text-2xl font-bold mb-1 text-gray-900">
               {editingProduct ? "Edit Product" : "Create New Product"}
             </h2>
-            <form onSubmit={editingProduct ? handleUpdateProduct : handleCreateProduct} className="space-y-4">
+            <p className="text-sm text-gray-500 mb-6">
+              {editingProduct ? "Update the product details below." : "Add a new product to your catalogue."}
+            </p>
+            <form onSubmit={editingProduct ? handleUpdateProduct : handleCreateProduct} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium mb-2">Product Name *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Product Name *</label>
                 <input
                   type="text"
                   value={productForm.name}
                   onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
                   required
                   maxLength={255}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none bg-white"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                 <textarea
                   value={productForm.description}
                   onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
                   maxLength={2000}
                   rows={4}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none bg-white"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Category</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
                 <input
                   type="text"
                   value={productForm.category}
                   onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                  placeholder="e.g. Kanjivaram, Banarasi, Silk"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none bg-white"
                 />
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
                 <input
                   type="checkbox"
                   id="featured"
                   checked={productForm.featured}
                   onChange={(e) => setProductForm({ ...productForm, featured: e.target.checked })}
-                  className="w-4 h-4"
+                  className="w-5 h-5 rounded border-gray-300 text-black focus:ring-black"
                 />
-                <label htmlFor="featured" className="text-sm font-medium">Featured Product</label>
+                <label htmlFor="featured" className="text-sm font-medium text-gray-700">
+                  Featured Product
+                  <span className="block text-xs font-normal text-gray-500">Show this product on the homepage</span>
+                </label>
               </div>
 
               {productForm.featured && (
                 <div>
-                  <label className="block text-sm font-medium mb-2">Display Order</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Display Order</label>
                   <input
                     type="number"
                     value={productForm.display_order}
                     onChange={(e) => setProductForm({ ...productForm, display_order: parseInt(e.target.value) })}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none bg-white"
                   />
                 </div>
               )}
@@ -385,13 +392,13 @@ export default function InventoryPage() {
                     setShowProductForm(false);
                     setEditingProduct(null);
                   }}
-                  className="flex-1 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                  className="flex-1 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-gray-700 font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition"
+                  className="flex-1 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition font-medium"
                 >
                   {editingProduct ? "Update Product" : "Create Product"}
                 </button>
@@ -403,74 +410,89 @@ export default function InventoryPage() {
 
       {/* Variant Form Modal */}
       {showVariantForm && selectedProduct && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-6">
-              Add Variant to {selectedProduct.name}
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto text-gray-900">
+            <h2 className="text-2xl font-bold mb-1 text-gray-900">
+              Add Variant
             </h2>
-            <form onSubmit={handleCreateVariant} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium mb-2">Color Name *</label>
-                <input
-                  type="text"
-                  value={variantForm.color}
-                  onChange={(e) => setVariantForm({ ...variantForm, color: e.target.value })}
-                  required
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
-                />
+            <p className="text-sm text-gray-500 mb-6">
+              Adding variant to <span className="font-medium text-gray-900">{selectedProduct.name}</span>
+            </p>
+            <form onSubmit={handleCreateVariant} className="space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Color Name *</label>
+                  <input
+                    type="text"
+                    value={variantForm.color}
+                    onChange={(e) => setVariantForm({ ...variantForm, color: e.target.value })}
+                    required
+                    placeholder="e.g. Royal Blue"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Size</label>
+                  <input
+                    type="text"
+                    value={variantForm.size}
+                    onChange={(e) => setVariantForm({ ...variantForm, size: e.target.value })}
+                    placeholder="e.g. Free Size, 6 yards"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none bg-white"
+                  />
+                </div>
               </div>
 
               <ColorPicker
                 value={variantForm.hex_code}
                 onChange={(hex) => setVariantForm({ ...variantForm, hex_code: hex })}
-                label="Color *"
+                label="Colour *"
               />
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Size</label>
-                <input
-                  type="text"
-                  value={variantForm.size}
-                  onChange={(e) => setVariantForm({ ...variantForm, size: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Price (₹) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={variantForm.price}
+                    onChange={(e) => setVariantForm({ ...variantForm, price: e.target.value })}
+                    required
+                    placeholder="2999.00"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Stock Quantity</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={variantForm.quantity}
+                    onChange={(e) => setVariantForm({ ...variantForm, quantity: parseInt(e.target.value) })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none bg-white"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Price (₹) *</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={variantForm.price}
-                  onChange={(e) => setVariantForm({ ...variantForm, price: e.target.value })}
-                  required
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Stock Quantity</label>
-                <input
-                  type="number"
-                  value={variantForm.quantity}
-                  onChange={(e) => setVariantForm({ ...variantForm, quantity: parseInt(e.target.value) })}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
                 <input
                   type="checkbox"
                   id="negotiable"
                   checked={variantForm.is_negotiable}
                   onChange={(e) => setVariantForm({ ...variantForm, is_negotiable: e.target.checked })}
-                  className="w-4 h-4"
+                  className="w-5 h-5 rounded border-gray-300 text-black focus:ring-black"
                 />
-                <label htmlFor="negotiable" className="text-sm font-medium">Price is Negotiable</label>
+                <label htmlFor="negotiable" className="text-sm font-medium text-gray-700">
+                  Price is Negotiable
+                  <span className="block text-xs font-normal text-gray-500">Customers can request a custom price</span>
+                </label>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Images (up to 4)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Images (up to 4)</label>
                 <ImageUploader
                   maxImages={4}
                   onImagesChange={setVariantImages}
@@ -484,13 +506,13 @@ export default function InventoryPage() {
                     setShowVariantForm(false);
                     setSelectedProduct(null);
                   }}
-                  className="flex-1 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                  className="flex-1 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-gray-700 font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition"
+                  className="flex-1 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition font-medium"
                 >
                   Create Variant
                 </button>
