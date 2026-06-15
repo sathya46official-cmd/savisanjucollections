@@ -92,7 +92,7 @@ export default function ProductDetailClient({ product, variant, categoryId }: Pr
             <div className="flex items-end gap-4 mb-4">
               <span className="text-2xl font-light text-[#1A1A1A]">
                 {variant.price
-                  ? `₹ ${variant.price.toLocaleString("en-IN")}`
+                  ? `₹ ${(variant.price / 100).toLocaleString("en-IN")}`
                   : "Price on Request"}
               </span>
               <span className="text-sm tracking-widest text-[#8C8776] uppercase pb-1">

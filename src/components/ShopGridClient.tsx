@@ -60,13 +60,14 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
                     }
                     if (data) {
                         // Transform data to match expected format
-                        const transformedData: ShopVariant[] = (data as ShopVariant[]).map((v) => ({
+                const transformedData: ShopVariant[] = (data as ShopVariant[]).map((v) => ({
                             ...v,
+                            price: v.price ? v.price / 100 : 0,
                             color_name: v.color,
                             hex_code: v.hex_code || '#000000',
                             stock_status: (v.quantity ?? 0) > 0 ? 'in_stock' : 'out_of_stock',
                             product: { id: v.product_id, name: v.product_name ?? '' },
-                            fabric: v.fabric || 'Silk' // Default fabric if not in DB
+                            fabric: v.fabric || 'Silk'
                         }));
                         setVariants(transformedData);
                         
@@ -91,6 +92,7 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
                         // Transform data to match expected format
                         const transformedData: ShopVariant[] = product.variants.map((v) => ({
                             ...v,
+                            price: v.price ? v.price / 100 : 0,
                             color_name: v.color,
                             hex_code: v.hex_code || '#000000',
                             stock_status: (v.quantity ?? 0) > 0 ? 'in_stock' : 'out_of_stock',
