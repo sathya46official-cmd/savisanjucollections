@@ -18,6 +18,10 @@ const BASE_URL = "https://savisanjucollections.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
+  icons: {
+    icon: "/assets/favicon.jpg",
+    apple: "/assets/favicon.jpg",
+  },
   title: {
     default: "SaviSanju Collections – Premium Kanjivaram & Banarasi Sarees",
     template: "%s | SaviSanju Collections",
