@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Plus, Edit, Trash2, Search, Package } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
 import ColorPicker from "@/components/admin/ColorPicker";
@@ -58,18 +58,20 @@ export default function InventoryPage() {
   });
   const [variantImages, setVariantImages] = useState<File[]>([]);
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     const { data, error } = await apiClient.getProducts();
     if (!error && data) {
-      setProducts(data);
+      setProducts(data as Product[]);
     }
     setLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    // Mount-time data fetch; setState happens inside the async loader.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchProducts();
+  }, [fetchProducts]);
 
   const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import ShopGridClient from "@/components/ShopGridClient";
 import { Metadata } from "next";
+import { safeJsonLd } from "@/lib/seo/jsonLd";
 
 const BASE_URL = "https://savisanjucollections.vercel.app";
 
@@ -33,7 +34,7 @@ export default function AllShopPage() {
     <main className="min-h-screen bg-[#FAF9F6]">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbSchema) }}
       />
             {/* Elegant Header */}
             <header className="w-full py-8 border-b border-[#EAE6D9] bg-white sticky top-0 z-40 flex items-center justify-between px-8 md:px-16">

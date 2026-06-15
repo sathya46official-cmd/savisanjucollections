@@ -17,6 +17,8 @@ function VerifyEmailContent() {
     const token = searchParams.get("token");
 
     if (!token) {
+      // No token is an immediate, terminal error state for this page.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStatus("error");
       setMessage("No verification token provided. Please check your email link.");
       return;

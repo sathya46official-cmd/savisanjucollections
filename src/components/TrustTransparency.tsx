@@ -35,7 +35,7 @@ export default function TrustTransparency() {
             Trust & Transparency
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Your satisfaction and trust are our top priorities. Here's our commitment to you.
+            Your satisfaction and trust are our top priorities. Here&apos;s our commitment to you.
           </p>
         </div>
 
@@ -77,7 +77,7 @@ export default function TrustTransparency() {
           <p className="text-gray-600 max-w-3xl mx-auto leading-relaxed">
             At SaviSanju Collections, we believe in building lasting relationships with our customers. 
             Every saree is a testament to our commitment to quality, authenticity, and exceptional service. 
-            Your satisfaction is not just our goal—it's our guarantee.
+            Your satisfaction is not just our goal—it&apos;s our guarantee.
           </p>
         </div>
       </div>

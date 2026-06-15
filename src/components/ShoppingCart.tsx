@@ -19,7 +19,7 @@ interface CartItem {
   product_image: string;
   color_name: string;
   price: number;
-  stock_quantity: number;
+  stock: number;
 }
 
 // Cart interface
@@ -78,11 +78,11 @@ export default function ShoppingCart({ isOpen, onClose }: ShoppingCartProps) {
   /**
    * Update cart item quantity
    */
-  const updateQuantity = async (itemId: string, newQuantity: number) => {
+  const updateQuantity = async (variantId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
     
     try {
-      setUpdating(itemId);
+      setUpdating(variantId);
       
       const response = await fetch(`${API_URL}/api/cart/update`, {
         method: 'PUT',
@@ -91,7 +91,7 @@ export default function ShoppingCart({ isOpen, onClose }: ShoppingCartProps) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          cartItemId: itemId,
+          variant_id: variantId,
           quantity: newQuantity
         })
       });
@@ -106,7 +106,7 @@ export default function ShoppingCart({ isOpen, onClose }: ShoppingCartProps) {
         if (!prev) return null;
         
         const updatedItems = prev.items.map(item =>
-          item.id === itemId ? { ...item, quantity: newQuantity } : item
+          item.variant_id === variantId ? { ...item, quantity: newQuantity } : item
         );
         
         const newTotal = updatedItems.reduce(
@@ -121,9 +121,9 @@ export default function ShoppingCart({ isOpen, onClose }: ShoppingCartProps) {
         };
       });
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating quantity:', error);
-      alert(error.message || 'Failed to update quantity');
+      alert(error instanceof Error ? error.message : 'Failed to update quantity');
     } finally {
       setUpdating(null);
     }
@@ -132,16 +132,17 @@ export default function ShoppingCart({ isOpen, onClose }: ShoppingCartProps) {
   /**
    * Remove item from cart
    */
-  const removeItem = async (itemId: string) => {
+  const removeItem = async (variantId: string) => {
     try {
-      setUpdating(itemId);
+      setUpdating(variantId);
       
-      const response = await fetch(`${API_URL}/api/cart/remove?cartItemId=${itemId}`, {
+      const response = await fetch(`${API_URL}/api/cart/remove`, {
         method: 'DELETE',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({ variant_id: variantId })
       });
 
       if (!response.ok) {
@@ -152,7 +153,7 @@ export default function ShoppingCart({ isOpen, onClose }: ShoppingCartProps) {
       setCart(prev => {
         if (!prev) return null;
         
-        const updatedItems = prev.items.filter(item => item.id !== itemId);
+        const updatedItems = prev.items.filter(item => item.variant_id !== variantId);
         
         const newTotal = updatedItems.reduce(
           (sum, item) => sum + (item.price * item.quantity),
@@ -277,8 +278,8 @@ export default function ShoppingCart({ isOpen, onClose }: ShoppingCartProps) {
                           <p className="text-sm text-gray-500">{item.color_name}</p>
                         </div>
                         <button
-                          onClick={() => removeItem(item.id)}
-                          disabled={updating === item.id}
+                          onClick={() => removeItem(item.variant_id)}
+                          disabled={updating === item.variant_id}
                           className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
                           aria-label="Remove item"
                         >
@@ -295,8 +296,8 @@ export default function ShoppingCart({ isOpen, onClose }: ShoppingCartProps) {
                       <div className="flex items-center gap-3">
                         <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
                           <button
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                            disabled={item.quantity <= 1 || updating === item.id}
+                            onClick={() => updateQuantity(item.variant_id, item.quantity - 1)}
+                            disabled={item.quantity <= 1 || updating === item.variant_id}
                             className="px-3 py-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             aria-label="Decrease quantity"
                           >
@@ -306,8 +307,8 @@ export default function ShoppingCart({ isOpen, onClose }: ShoppingCartProps) {
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            disabled={item.quantity >= item.stock_quantity || updating === item.id}
+                            onClick={() => updateQuantity(item.variant_id, item.quantity + 1)}
+                            disabled={item.quantity >= item.stock || updating === item.variant_id}
                             className="px-3 py-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             aria-label="Increase quantity"
                           >
@@ -316,9 +317,9 @@ export default function ShoppingCart({ isOpen, onClose }: ShoppingCartProps) {
                         </div>
 
                         {/* Stock Info */}
-                        {item.stock_quantity <= 5 && (
+                        {item.stock <= 5 && (
                           <span className="text-xs text-orange-600 font-medium">
-                            Only {item.stock_quantity} left
+                            Only {item.stock} left
                           </span>
                         )}
                       </div>

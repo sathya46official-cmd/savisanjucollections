@@ -1,12 +1,32 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ProductDetailClient from "./ProductDetailClient";
+import { safeJsonLd } from "@/lib/seo/jsonLd";
 
 const BASE_URL = "https://savisanjucollections.vercel.app";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 interface PageProps {
   params: Promise<{ categoryId: string; variantId: string }>;
+}
+
+interface ApiProduct {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+interface ApiVariant {
+  id: string;
+  color: string;
+  description?: string;
+  price?: number;
+  image_url: string;
+  quantity?: number;
+  is_negotiable?: boolean;
+  hex_code?: string;
+  additional_images?: string[];
+  product_id?: string;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -49,13 +69,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         images: variant.image_url ? [variant.image_url] : [],
       },
     };
-  } catch (error) {
+  } catch {
     return {};
   }
 }
 
 export default async function ProductDetailPage({ params }: PageProps) {
   const { categoryId, variantId } = await params;
+
+  let product: ApiProduct;
+  let variant: ApiVariant;
 
   try {
     const [productRes, variantRes] = await Promise.all([
@@ -65,75 +88,75 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
     if (!productRes.ok || !variantRes.ok) notFound();
 
-    const product = await productRes.json();
-    const variant = await variantRes.json();
-
-    // Transform variant to match expected format
-    const transformedVariant = {
-      ...variant,
-      color_name: variant.color,
-      stock_status: variant.quantity > 0 ? 'in_stock' : 'out_of_stock',
-    };
-
-    // Product structured data (JSON-LD) — makes Google show price/availability in search results
-    const productSchema = {
-      "@context": "https://schema.org",
-      "@type": "Product",
-      name: `${variant.color} ${product.name} Saree`,
-      description: variant.description || product.description,
-      image: variant.image_url,
-      sku: variantId,
-      category: `${product.name} Sarees`,
-      brand: {
-        "@type": "Brand",
-        name: "SaviSanju Collections",
-      },
-      offers: {
-        "@type": "Offer",
-        url: `${BASE_URL}/shop/${categoryId}/${variantId}`,
-        priceCurrency: "INR",
-        price: variant.price ? variant.price / 100 : undefined,
-        availability:
-          variant.quantity > 0
-            ? "https://schema.org/InStock"
-            : "https://schema.org/OutOfStock",
-        seller: {
-          "@type": "Organization",
-          name: "SaviSanju Collections",
-        },
-        priceValidUntil: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
-      },
-    };
-
-    const breadcrumbSchema = {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
-        { "@type": "ListItem", position: 2, name: "All Sarees", item: `${BASE_URL}/shop` },
-        { "@type": "ListItem", position: 3, name: product.name, item: `${BASE_URL}/shop/${categoryId}` },
-        { "@type": "ListItem", position: 4, name: `${variant.color} ${product.name}`, item: `${BASE_URL}/shop/${categoryId}/${variantId}` },
-      ],
-    };
-
-    return (
-      <>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-        />
-        <ProductDetailClient
-          product={product}
-          variant={transformedVariant}
-          categoryId={categoryId}
-        />
-      </>
-    );
-  } catch (error) {
+    product = await productRes.json();
+    variant = await variantRes.json();
+  } catch {
     notFound();
   }
+
+  // Transform variant to match expected format
+  const transformedVariant = {
+    ...variant,
+    color_name: variant.color,
+    stock_status: (variant.quantity ?? 0) > 0 ? 'in_stock' : 'out_of_stock',
+  };
+
+  // Product structured data (JSON-LD) — makes Google show price/availability in search results
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: `${variant.color} ${product.name} Saree`,
+    description: variant.description || product.description,
+    image: variant.image_url,
+    sku: variantId,
+    category: `${product.name} Sarees`,
+    brand: {
+      "@type": "Brand",
+      name: "SaviSanju Collections",
+    },
+    offers: {
+      "@type": "Offer",
+      url: `${BASE_URL}/shop/${categoryId}/${variantId}`,
+      priceCurrency: "INR",
+      price: variant.price ? variant.price / 100 : undefined,
+      availability:
+        (variant.quantity ?? 0) > 0
+          ? "https://schema.org/InStock"
+          : "https://schema.org/OutOfStock",
+      seller: {
+        "@type": "Organization",
+        name: "SaviSanju Collections",
+      },
+      priceValidUntil: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+    },
+  };
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
+      { "@type": "ListItem", position: 2, name: "All Sarees", item: `${BASE_URL}/shop` },
+      { "@type": "ListItem", position: 3, name: product.name, item: `${BASE_URL}/shop/${categoryId}` },
+      { "@type": "ListItem", position: 4, name: `${variant.color} ${product.name}`, item: `${BASE_URL}/shop/${categoryId}/${variantId}` },
+    ],
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(productSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbSchema) }}
+      />
+      <ProductDetailClient
+        product={product}
+        variant={transformedVariant}
+        categoryId={categoryId}
+      />
+    </>
+  );
 }

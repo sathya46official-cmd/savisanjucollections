@@ -14,6 +14,8 @@ export default function ColorPicker({ value, onChange, label }: ColorPickerProps
 
   useEffect(() => {
     if (value) {
+      // Sync controlled prop value into local input state.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHexCode(value);
     }
   }, [value]);

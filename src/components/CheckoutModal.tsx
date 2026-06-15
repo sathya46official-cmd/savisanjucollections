@@ -148,7 +148,7 @@ export default function CheckoutModal({ isOpen, product, variant, onClose }: Che
                             <p className="text-2xl font-mono font-bold tracking-widest text-black">{orderId}</p>
                         </div>
                         <p className="text-sm text-gray-500 mt-2">
-                            Our customer agent will contact you shortly to confirm delivery details and arrange payment at your doorstep. We've saved your address for next time!
+                            Our customer agent will contact you shortly to confirm delivery details and arrange payment at your doorstep. We&apos;ve saved your address for next time!
                         </p>
                         <button 
                             onClick={handleClose}
@@ -227,7 +227,7 @@ export default function CheckoutModal({ isOpen, product, variant, onClose }: Che
                                     {isSubmitting ? "Processing..." : "Confirm Delivery Order"}
                                 </button>
                                 <p className="text-xs text-center text-gray-500 mt-2">
-                                    You don't need to pay online. Our agent will contact you.
+                                    You don&apos;t need to pay online. Our agent will contact you.
                                 </p>
                             </form>
                         </div>

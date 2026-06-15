@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
+import { safeJsonLd } from "@/lib/seo/jsonLd";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -140,7 +141,7 @@ export default function RootLayout({
         {/* Organization structured data */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(organizationSchema) }}
         />
       </head>
       <body

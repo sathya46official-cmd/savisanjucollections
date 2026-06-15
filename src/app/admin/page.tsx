@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Search, Phone, Mail, MessageCircle, Package, Clock, CheckCircle, XCircle, Truck } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
 import Image from "next/image";
@@ -60,18 +60,20 @@ export default function OrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
 
-  useEffect(() => {
-    fetchOrders();
-  }, [statusFilter]);
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     setLoading(true);
     const { data, error } = await apiClient.getAdminOrders(statusFilter === 'all' ? undefined : statusFilter);
     if (!error && data) {
-      setOrders(data);
+      setOrders(data as Order[]);
     }
     setLoading(false);
-  };
+  }, [statusFilter]);
+
+  useEffect(() => {
+    // Mount/filter-change data fetch; setState happens inside the async loader.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchOrders();
+  }, [fetchOrders]);
 
   const handleStatusUpdate = async (orderId: string, newStatus: OrderStatus) => {
     const { error } = await apiClient.updateOrderStatus(orderId, newStatus);
@@ -80,7 +82,7 @@ export default function OrdersPage() {
       fetchOrders();
       if (selectedOrder?.order_id === orderId) {
         const { data } = await apiClient.getOrder(orderId);
-        if (data) setSelectedOrder(data);
+        if (data) setSelectedOrder(data as Order);
       }
     } else {
       alert(error?.message || "Failed to update status");

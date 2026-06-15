@@ -167,9 +167,9 @@ export default function CheckoutPage() {
       setOrderId(data.orderId);
       setStep('success');
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error placing order:', error);
-      alert(error.message || 'Failed to place order. Please try again.');
+      alert(error instanceof Error ? error.message : 'Failed to place order. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -214,11 +214,11 @@ export default function CheckoutPage() {
               </li>
               <li className="flex gap-2">
                 <span className="font-semibold">2.</span>
-                <span>We'll contact you to confirm the price and delivery details</span>
+                <span>We&apos;ll contact you to confirm the price and delivery details</span>
               </li>
               <li className="flex gap-2">
                 <span className="font-semibold">3.</span>
-                <span>Once confirmed, we'll process your order</span>
+                <span>Once confirmed, we&apos;ll process your order</span>
               </li>
               <li className="flex gap-2">
                 <span className="font-semibold">4.</span>

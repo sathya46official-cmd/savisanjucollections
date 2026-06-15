@@ -16,7 +16,11 @@ type FormMode = 'login' | 'register';
 function AuthForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '/';
+  // Only allow redirects to internal, same-origin paths. A value like
+  // "https://evil.com", "//evil.com" or "/\evil.com" is rejected to prevent
+  // an open-redirect (post-login phishing) via ?redirect=...
+  const rawRedirect = searchParams.get('redirect');
+  const redirectTo = rawRedirect && /^\/(?![/\\])/.test(rawRedirect) ? rawRedirect : '/';
 
   // Form state
   const [mode, setMode] = useState<FormMode>('login');
@@ -111,9 +115,9 @@ function AuthForm() {
         router.push(redirectTo);
       }, 1000);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
-      setError(error.message || 'Login failed. Please try again.');
+      setError(error instanceof Error ? error.message : 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -186,9 +190,9 @@ function AuthForm() {
         setSuccess(null);
       }, 3000);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Registration error:', error);
-      setError(error.message || 'Registration failed. Please try again.');
+      setError(error instanceof Error ? error.message : 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
