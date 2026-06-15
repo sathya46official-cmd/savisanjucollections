@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const BASE_URL = "https://savisanjucollections.vercel.app";
+const BASE_URL = "https://savisanjucollections.me";
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
@@ -81,7 +81,7 @@ export const metadata: Metadata = {
   verification: {
     // Add your Google Search Console verification token here after setup:
     // 1. Go to https://search.google.com/search-console
-    // 2. Add property → URL prefix → https://savisanjucollections.vercel.app
+    // 2. Add property → URL prefix → https://savisanjucollections.me
     // 3. Choose "HTML tag" verification method
     // 4. Copy the content value and paste below
     // google: "paste-your-token-here",

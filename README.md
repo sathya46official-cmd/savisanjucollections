@@ -2,7 +2,7 @@
 
 Next.js 15 storefront for a luxury Indian saree e-commerce platform. Features GSAP animations, a full shopping cart, order tracking, and an admin dashboard.
 
-**Live**: [savisanjucollections.vercel.app](https://savisanjucollections.vercel.app)  
+**Live**: [savisanjucollections.me](https://savisanjucollections.me)  
 **Backend repo**: [github.com/sathya46official-cmd/savisanju-backend](https://github.com/sathya46official-cmd/savisanju-backend)
 
 ---

@@ -4,7 +4,7 @@ import ShopGridClient from "@/components/ShopGridClient";
 import { Metadata } from "next";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 
-const BASE_URL = "https://savisanjucollections.vercel.app";
+const BASE_URL = "https://savisanjucollections.me";
 
 export const metadata: Metadata = {
   title: "Buy Premium Sarees Online – Kanjivaram & Banarasi Collection",

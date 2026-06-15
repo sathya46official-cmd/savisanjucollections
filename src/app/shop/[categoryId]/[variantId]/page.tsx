@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import ProductDetailClient from "./ProductDetailClient";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 
-const BASE_URL = "https://savisanjucollections.vercel.app";
+const BASE_URL = "https://savisanjucollections.me";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 interface PageProps {

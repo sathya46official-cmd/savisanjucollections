@@ -6,7 +6,7 @@ import { safeJsonLd } from "@/lib/seo/jsonLd";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-const BASE_URL = "https://savisanjucollections.vercel.app";
+const BASE_URL = "https://savisanjucollections.me";
 
 export async function generateMetadata(
     { params }: { params: Promise<{ categoryId: string }> }

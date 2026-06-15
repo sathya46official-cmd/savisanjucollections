@@ -3,7 +3,7 @@ import HeroCanvas from "@/components/HeroCanvas";
 import SmoothFadeTransition from "@/components/TornPaperDivider";
 import CollectionAccordion from "@/components/CollectionAccordion";
 
-const BASE_URL = "https://savisanjucollections.vercel.app";
+const BASE_URL = "https://savisanjucollections.me";
 
 export const metadata: Metadata = {
   title: "SaviSanju Collections – Premium Kanjivaram & Banarasi Sarees",
