@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://api.savisanjucollections.me/:path*"
+      "destination": "https://api.savisanjucollections.me/api/:path*"
     }
   ]
 }
