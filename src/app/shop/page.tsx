@@ -41,10 +41,13 @@ export default function AllShopPage() {
                 <Link href="/" className="text-2xl font-serif tracking-widest text-[#1A1A1A]">
                     SaviSanju<span className="text-[#8C8776]">Collections</span>
                 </Link>
-                <nav className="hidden md:flex gap-8 text-sm uppercase tracking-widest text-[#5C584E]">
+                <nav className="hidden md:flex gap-8 text-sm uppercase tracking-widest text-[#5C584E] items-center">
                     <Link href="/" className="hover:text-[#1A1A1A] transition-colors">Home</Link>
                     <Link href="/shop" className="text-[#1A1A1A]">Sarees</Link>
                     <Link href="/auth" className="hover:text-[#1A1A1A] transition-colors">Account</Link>
+                    <Link href="/orders" className="hover:text-[#1A1A1A] transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    </Link>
                 </nav>
             </header>
 

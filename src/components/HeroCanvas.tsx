@@ -126,11 +126,13 @@ export default function HeroCanvas() {
             render(0);
 
             const scrubValue = isLowPerformance ? 2 : 1;
+            const pinDuration = isMobile ? "+=80%" : "+=100%";
 
             const trigger = ScrollTrigger.create({
                 trigger: containerRef.current,
                 start: "top top",
-                end: "bottom top",
+                end: pinDuration,
+                pin: true,
                 scrub: scrubValue,
                 onUpdate: (self) => {
                     const frameSkip = isLowPerformance ? 2 : 1;
@@ -169,10 +171,13 @@ export default function HeroCanvas() {
                 <div className="text-2xl font-serif tracking-widest uppercase drop-shadow-md">
                     SaviSanju
                 </div>
-                <nav className="hidden md:flex gap-8 text-xs uppercase tracking-[0.3em]">
+                <nav className="hidden md:flex gap-8 text-xs uppercase tracking-[0.3em] items-center">
                     <a href="#collections" className="hover:text-white/70 transition-colors">Collections</a>
                     <Link href="/shop" className="hover:text-white/70 transition-colors">Sarees</Link>
                     <Link href="/auth" className="hover:text-white/70 transition-colors">Account</Link>
+                    <Link href="/orders" className="hover:text-white/70 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    </Link>
                 </nav>
             </header>
 
