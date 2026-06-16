@@ -109,13 +109,13 @@ export default async function ShopCategoryPage(
             </header>
 
             {/* Luxurious Hero Banner for Category */}
-            <div className="relative w-full h-[40vh] md:h-[50vh] bg-[#EAE6D9] flex items-center justify-center overflow-hidden">
+            <div className="relative w-full h-[20vh] md:h-[25vh] bg-[#EAE6D9] flex items-center justify-center overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-[#D7D1C4]/50 to-[#EAE6D9]/50 mix-blend-multiply" />
                 <div className="z-10 text-center px-4">
-                    <h1 className="text-4xl md:text-6xl font-serif text-[#1A1A1A] tracking-wider mb-4">
+                    <h1 className="text-3xl md:text-5xl font-serif text-[#1A1A1A] tracking-wider mb-2">
                         {category?.name || 'Sarees'}
                     </h1>
-                    <p className="text-[#5C584E] max-w-2xl mx-auto text-sm md:text-base leading-relaxed tracking-wide font-light">
+                    <p className="text-[#5C584E] max-w-2xl mx-auto text-xs md:text-sm leading-relaxed tracking-wide font-light">
                         {category?.description || 'Discover the timeless elegance of our elegant collections.'}
                     </p>
                 </div>
