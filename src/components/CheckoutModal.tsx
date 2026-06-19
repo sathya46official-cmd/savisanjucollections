@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { X, CheckCircle } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
+import { resolveImageUrl, handleImageError } from "@/lib/images";
 import { useRouter } from "next/navigation";
 
 interface Variant {
@@ -160,11 +161,12 @@ export default function CheckoutModal({ isOpen, product, variant, onClose }: Che
                 ) : (
                     <>
                         <div className="p-6 border-b border-[#E0DCD0] flex gap-4 items-center bg-white">
-                            <img 
-                                src={variant.image_url} 
-                                alt={product.name} 
+                            <img
+                                src={resolveImageUrl(variant.image_url)}
+                                alt={product.name}
                                 className="w-16 h-16 object-cover rounded-md border border-gray-200"
                                 loading="lazy"
+                                onError={handleImageError}
                             />
                             <div>
                                 <h3 className="text-xl font-serif text-black">{product.name}</h3>

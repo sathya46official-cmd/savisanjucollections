@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ShoppingCart, Bell, AlertCircle } from "lucide-react";
+import { resolveImageUrl, handleImageError } from "@/lib/images";
 
 // Backend API URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -142,10 +143,11 @@ export default function ProductCardCustomer({ product, onAddToCart }: ProductCar
       {/* Product Image */}
       <div className="relative aspect-square overflow-hidden bg-gray-100">
         <img
-          src={selectedVariant.image_url}
+          src={resolveImageUrl(selectedVariant.image_url)}
           alt={`${product.name} - ${selectedVariant.color_name}`}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           loading="lazy"
+          onError={handleImageError}
         />
         
         {/* Stock Badge */}

@@ -2,6 +2,7 @@
 
 import { Product, Variant } from '@/hooks/useProducts';
 import { Edit3, Trash2 } from 'lucide-react';
+import { resolveImageUrl, handleImageError } from '@/lib/images';
 
 interface ProductCardProps {
   product: Product;
@@ -45,11 +46,12 @@ export default function ProductCard({
         {product.variants?.map((variant: Variant) => (
           <div key={variant.id} className="border border-gray-100 rounded-md p-3 relative group flex flex-col">
             <div className="aspect-square w-full rounded-md overflow-hidden bg-gray-100 mb-3 relative">
-              <img 
-                src={variant.image_url} 
-                alt={variant.color_name} 
+              <img
+                src={resolveImageUrl(variant.image_url)}
+                alt={variant.color_name}
                 className="w-full h-full object-cover"
                 loading="lazy"
+                onError={handleImageError}
               />
               <div className="absolute top-2 left-2 w-4 h-4 rounded-full border border-white/50 shadow-sm" style={{ backgroundColor: variant.hex_code }} />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">

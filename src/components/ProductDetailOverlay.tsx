@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { X } from "lucide-react";
+import { resolveImageUrl, handleImageError } from "@/lib/images";
 
 interface Variant {
     id: string;
@@ -130,11 +131,12 @@ export default function ProductDetailOverlay({
 
                 {/* Center Column: Saree Image */}
                 <div className="md:w-1/3 flex justify-center items-center h-[50vh] md:h-[80vh] relative z-20">
-                    <img 
-                        src={activeVariant?.image_url} 
-                        alt={`${product.name} - ${activeVariant?.color_name}`} 
+                    <img
+                        src={resolveImageUrl(activeVariant?.image_url)}
+                        alt={`${product.name} - ${activeVariant?.color_name}`}
                         className="h-full w-auto object-contain drop-shadow-2xl transition-all duration-700 ease-in-out"
                         loading="lazy"
+                        onError={handleImageError}
                     />
                 </div>
 
@@ -150,11 +152,12 @@ export default function ProductDetailOverlay({
                                     className={`relative rounded-full w-16 h-16 flex flex-col items-center justify-center gap-2 transition overflow-visible group`}
                                 >
                                     <div className={`w-12 h-12 rounded-full overflow-hidden border-2 transition-all ${activeVariantIdx === idx ? 'border-white scale-110 drop-shadow-lg' : 'border-transparent opacity-60 group-hover:opacity-100'}`}>
-                                        <img 
-                                            src={v.image_url} 
-                                            alt={v.color_name} 
+                                        <img
+                                            src={resolveImageUrl(v.image_url)}
+                                            alt={v.color_name}
                                             className="w-full h-full object-cover"
                                             loading="lazy"
+                                            onError={handleImageError}
                                         />
                                     </div>
                                     <span className="absolute -bottom-6 text-xs whitespace-nowrap opacity-60 font-light tracking-wide">{v.color_name}</span>

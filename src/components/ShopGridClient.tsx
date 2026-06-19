@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { apiClient } from "@/lib/api/client";
+import { resolveImageUrl, handleImageError } from "@/lib/images";
 import CheckoutModal from "./CheckoutModal";
 import ProductFilters from "./ProductFilters";
 import ProductSort, { SortOption } from "./ProductSort";
@@ -213,26 +214,28 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
 
     return (
         <>
-            <div className="max-w-[1800px] mx-auto flex h-[calc(100vh-300px)]">
+            <div className="max-w-[1800px] mx-auto flex flex-col md:flex-row min-h-screen">
                 
                 {/* Desktop Filters */}
-                <div className="hidden md:block">
-                    <ProductFilters
-                        minPrice={minPrice}
-                        maxPrice={maxPrice}
-                        priceRange={priceRange}
-                        onPriceChange={setPriceRange}
-                        availableFabrics={availableFabrics}
-                        selectedFabrics={selectedFabrics}
-                        onFabricChange={setSelectedFabrics}
-                        availableColors={availableColors}
-                        selectedColors={selectedColors}
-                        onColorChange={setSelectedColors}
-                        showOutOfStock={showOutOfStock}
-                        onStockChange={setShowOutOfStock}
-                        onClearAll={handleClearAllFilters}
-                        activeFilterCount={activeFilterCount}
-                    />
+                <div className="hidden md:block md:w-64 lg:w-72 flex-shrink-0">
+                    <div className="sticky top-24 max-h-[calc(100vh-6rem)] overflow-y-auto p-4">
+                        <ProductFilters
+                            minPrice={minPrice}
+                            maxPrice={maxPrice}
+                            priceRange={priceRange}
+                            onPriceChange={setPriceRange}
+                            availableFabrics={availableFabrics}
+                            selectedFabrics={selectedFabrics}
+                            onFabricChange={setSelectedFabrics}
+                            availableColors={availableColors}
+                            selectedColors={selectedColors}
+                            onColorChange={setSelectedColors}
+                            showOutOfStock={showOutOfStock}
+                            onStockChange={setShowOutOfStock}
+                            onClearAll={handleClearAllFilters}
+                            activeFilterCount={activeFilterCount}
+                        />
+                    </div>
                 </div>
 
                 {/* Mobile Filter Button */}
@@ -287,16 +290,18 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
                 )}
 
                 {/* Products Section */}
-                <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 flex flex-col">
                     {/* Sort Bar */}
-                    <ProductSort
-                        currentSort={sortBy}
-                        onSortChange={setSortBy}
-                        resultCount={filteredAndSortedVariants.length}
-                    />
+                    <div className="sticky top-20 md:top-24 z-30 bg-[#FAF9F6] border-b border-gray-200">
+                        <ProductSort
+                            currentSort={sortBy}
+                            onSortChange={setSortBy}
+                            resultCount={filteredAndSortedVariants.length}
+                        />
+                    </div>
 
                     {/* Product Grid */}
-                    <div className="flex-1 overflow-y-auto px-6 py-8">
+                    <div className="px-6 py-8">
                         {error ? (
                             <div className="flex flex-col items-center justify-center h-full text-center px-6">
                                 <p className="text-red-600 text-lg mb-4">{error}</p>
@@ -333,11 +338,12 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
                                             <div className="w-full aspect-[3/4] overflow-hidden bg-gray-100 relative">
                                                 {variant.image_url ? (
                                                     <>
-                                                        <img 
-                                                            src={variant.image_url} 
+                                                        <img
+                                                            src={resolveImageUrl(variant.image_url)}
                                                             alt={`${variant.color_name} Saree`}
                                                             className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
                                                             loading="lazy"
+                                                            onError={handleImageError}
                                                         />
                                                         {/* Out of Stock Overlay */}
                                                         {variant.stock_status === 'out_of_stock' && (

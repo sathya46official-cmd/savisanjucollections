@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ShieldCheck, Truck, RotateCcw } from "lucide-react";
 import CheckoutModal from "@/components/CheckoutModal";
+import { resolveImageUrl, handleImageError } from "@/lib/images";
 
 interface Product {
   id: string;
@@ -61,10 +62,11 @@ export default function ProductDetailClient({ product, variant, categoryId }: Pr
                 }`}
               >
                 <img
-                  src={img}
+                  src={resolveImageUrl(img)}
                   alt={`${variant.color_name} ${product.name} view ${idx + 1}`}
                   className="w-full h-full object-cover"
                   loading="lazy"
+                  onError={handleImageError}
                 />
               </button>
             ))}
@@ -72,9 +74,10 @@ export default function ProductDetailClient({ product, variant, categoryId }: Pr
 
           <div className="flex-1 bg-white relative overflow-hidden group">
             <img
-              src={selectedImage}
+              src={resolveImageUrl(selectedImage)}
               alt={`${variant.color_name} ${product.name} – handwoven saree`}
               className="w-full h-full object-cover object-center transition-transform duration-700 ease-in-out group-hover:scale-[1.02]"
+              onError={handleImageError}
             />
           </div>
         </div>

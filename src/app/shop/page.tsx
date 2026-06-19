@@ -51,8 +51,8 @@ export default function AllShopPage() {
                 </nav>
             </header>
 
-            {/* Luxurious Hero Banner for Category */}
-            <div className="relative w-full h-[20vh] md:h-[25vh] bg-[#EAE6D9] flex items-center justify-center overflow-hidden">
+            {/* Category Banner - scrolls normally, not sticky */}
+            <div className="relative w-full h-[16vh] md:h-[20vh] bg-[#EAE6D9] flex items-center justify-center overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-[#D7D1C4]/50 to-[#EAE6D9]/50 mix-blend-multiply" />
                 <div className="z-10 text-center px-4">
                     <h1 className="text-3xl md:text-5xl font-serif text-[#1A1A1A] tracking-wider mb-2">
