@@ -33,10 +33,10 @@ export default function CollectionAccordion() {
       id="collections"
       className="relative w-full min-h-screen bg-[#F4F2EC] flex flex-col items-center justify-center py-16 md:py-24 z-10"
     >
-      <div className="w-full max-w-[1200px] mx-auto px-4 md:px-6">
+      <div className="w-full mx-auto px-4 md:px-6 lg:px-10">
         {/* Slice Accordion */}
         <div
-          className="hidden md:flex items-center justify-center w-full h-[42vh] lg:h-[48vh] gap-2 lg:gap-3 collection-panels"
+          className="hidden md:flex items-center justify-center w-full h-[54vh] lg:h-[60vh] gap-2 lg:gap-3 collection-panels"
           onMouseLeave={() => setActiveId(null)}
         >
           {COLLECTIONS.map((collection) => (
