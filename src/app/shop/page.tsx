@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import ShopGridClient from "@/components/ShopGridClient";
+import SiteHeader from "@/components/SiteHeader";
 import { Metadata } from "next";
 import { safeJsonLd } from "@/lib/seo/jsonLd";
 
@@ -36,38 +36,25 @@ export default function AllShopPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbSchema) }}
       />
-            {/* Elegant Header */}
-            <header className="w-full py-6 border-b border-[#EAE6D9] bg-white sticky top-0 z-40 flex items-center justify-between px-8 md:px-16">
-                <Link href="/" className="text-2xl font-serif tracking-widest text-[#1A1A1A]">
-                    SaviSanju<span className="text-[#8C8776]">Collections</span>
-                </Link>
-                <nav className="hidden md:flex gap-8 text-sm uppercase tracking-widest text-[#5C584E] items-center">
-                    <Link href="/" className="hover:text-[#1A1A1A] transition-colors">Home</Link>
-                    <Link href="/shop" className="text-[#1A1A1A]">Sarees</Link>
-                    <Link href="/auth" className="hover:text-[#1A1A1A] transition-colors">Account</Link>
-                    <Link href="/orders" className="hover:text-[#1A1A1A] transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                    </Link>
-                </nav>
-            </header>
+      <SiteHeader />
 
-            {/* Category Banner - scrolls normally, not sticky */}
-            <div className="relative w-full h-[16vh] md:h-[20vh] bg-[#EAE6D9] flex items-center justify-center overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-[#D7D1C4]/50 to-[#EAE6D9]/50 mix-blend-multiply" />
-                <div className="z-10 text-center px-4">
-                    <h1 className="text-3xl md:text-5xl font-serif text-[#1A1A1A] tracking-wider mb-2">
-                        All Sarees
-                    </h1>
-                    <p className="text-[#5C584E] max-w-2xl mx-auto text-xs md:text-sm leading-relaxed tracking-wide font-light">
-                        Discover the complete master collection of timeless elegance from SaviSanju.
-                    </p>
-                </div>
-            </div>
+      {/* Category Banner - scrolls normally, not sticky */}
+      <div className="relative w-full h-[16vh] md:h-[20vh] bg-[#EAE6D9] flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#D7D1C4]/50 to-[#EAE6D9]/50 mix-blend-multiply" />
+        <div className="z-10 text-center px-4">
+          <h1 className="text-3xl md:text-5xl font-serif text-[#1A1A1A] tracking-wider mb-2">
+            All Sarees
+          </h1>
+          <p className="text-[#5C584E] max-w-2xl mx-auto text-xs md:text-sm leading-relaxed tracking-wide font-light">
+            Discover the complete master collection of timeless elegance from SaviSanju.
+          </p>
+        </div>
+      </div>
 
-            {/* Main Shop Layout */}
-            <Suspense fallback={<div className="h-screen flex items-center justify-center text-[#8C8776] tracking-widest">LOADING COLLECTION...</div>}>
-                <ShopGridClient categoryId="all" categoryName="Master" />
-            </Suspense>
-        </main>
-    );    
+      {/* Main Shop Layout */}
+      <Suspense fallback={<div className="h-screen flex items-center justify-center text-[#8C8776] tracking-widest">LOADING COLLECTION...</div>}>
+        <ShopGridClient categoryId="all" categoryName="Master" />
+      </Suspense>
+    </main>
+  );
 }

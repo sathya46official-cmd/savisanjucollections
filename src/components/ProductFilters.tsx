@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface FilterProps {
   // Price
@@ -75,7 +75,7 @@ export default function ProductFilters({
   };
 
   return (
-    <aside className="w-full md:w-72 flex-shrink-0 bg-white border-r border-gray-200 h-full overflow-y-auto">
+    <aside className="w-full md:w-72 flex-shrink-0 bg-white border-r border-gray-200 h-full overflow-y-auto overflow-x-hidden">
       {/* Filter Header */}
       <div className="sticky top-0 bg-white z-10 border-b border-gray-200 p-4">
         <div className="flex items-center justify-between">

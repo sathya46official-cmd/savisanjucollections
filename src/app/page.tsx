@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import HeroCanvas from "@/components/HeroCanvas";
 import SmoothFadeTransition from "@/components/TornPaperDivider";
-import CollectionGallery from "@/components/CollectionGallery";
+import CollectionAccordion from "@/components/CollectionAccordion";
 
 const BASE_URL = "https://savisanjucollections.me";
 
@@ -47,7 +47,7 @@ export default function Home() {
       {/* Elegant fade transition block overlapping the canvas bottom */}
       <SmoothFadeTransition />
 
-      <CollectionGallery />
+      <CollectionAccordion />
     </main>
   );
 }
