@@ -13,12 +13,12 @@ interface Collection {
 }
 
 const COLLECTIONS: Collection[] = [
-  { id: "kanjivaram", title: "Kanjivaram", subtitle: "Timeless Silk", image: "/assets/collection/saree1.jpeg", href: "/shop", offset: 18 },
-  { id: "banarasi", title: "Banarasi", subtitle: "Regal Weaves", image: "/assets/collection/saree2.jpeg", href: "/shop", offset: -22 },
-  { id: "crape-silk", title: "Crape Silk", subtitle: "Effortless Drape", image: "/assets/collection/saree3.jpeg", href: "/shop", offset: 24 },
-  { id: "tussar", title: "Tussar", subtitle: "Earthy Elegance", image: "/assets/collection/saree4.jpeg", href: "/shop", offset: -14 },
-  { id: "bridal", title: "Bridal", subtitle: "Wedding Splendour", image: "/assets/collection/saree5.jpeg", href: "/shop", offset: 20 },
-  { id: "festive", title: "Festive", subtitle: "Celebration Ready", image: "/assets/collection/saree6.jpeg", href: "/shop", offset: -18 },
+  { id: "kanjivaram", title: "Kanjivaram", subtitle: "Timeless Silk", image: "/assets/collection/saree1.jpeg", href: "/shop", offset: 12 },
+  { id: "banarasi", title: "Banarasi", subtitle: "Regal Weaves", image: "/assets/collection/saree2.jpeg", href: "/shop", offset: -16 },
+  { id: "crape-silk", title: "Crape Silk", subtitle: "Effortless Drape", image: "/assets/collection/saree3.jpeg", href: "/shop", offset: 16 },
+  { id: "tussar", title: "Tussar", subtitle: "Earthy Elegance", image: "/assets/collection/saree4.jpeg", href: "/shop", offset: -10 },
+  { id: "bridal", title: "Bridal", subtitle: "Wedding Splendour", image: "/assets/collection/saree5.jpeg", href: "/shop", offset: 14 },
+  { id: "festive", title: "Festive", subtitle: "Celebration Ready", image: "/assets/collection/saree6.jpeg", href: "/shop", offset: -12 },
 ];
 
 export default function CollectionAccordion() {
@@ -33,10 +33,10 @@ export default function CollectionAccordion() {
       id="collections"
       className="relative w-full min-h-screen bg-[#F4F2EC] flex flex-col items-center justify-center py-16 md:py-24 z-10"
     >
-      <div className="w-full max-w-[1400px] mx-auto px-4 md:px-8">
+      <div className="w-full max-w-[1200px] mx-auto px-4 md:px-6">
         {/* Slice Accordion */}
         <div
-          className="hidden md:flex items-center justify-center w-full h-[55vh] lg:h-[60vh] gap-3 lg:gap-4 collection-panels"
+          className="hidden md:flex items-center justify-center w-full h-[42vh] lg:h-[48vh] gap-2 lg:gap-3 collection-panels"
           onMouseLeave={() => setActiveId(null)}
         >
           {COLLECTIONS.map((collection) => (
