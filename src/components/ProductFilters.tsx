@@ -83,10 +83,10 @@ export default function ProductFilters({
           {activeFilterCount > 0 && (
             <button
               onClick={onClearAll}
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+              className="text-sm text-[#9A7B4F] hover:text-[#1A1A1A] font-medium flex items-center gap-1"
             >
               Clear All
-              <span className="bg-blue-100 text-blue-800 text-xs rounded-full px-2 py-0.5">
+              <span className="bg-[#F0EBDD] text-[#7A2E2E] text-xs rounded-full px-2 py-0.5">
                 {activeFilterCount}
               </span>
             </button>

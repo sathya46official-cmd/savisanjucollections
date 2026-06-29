@@ -89,7 +89,7 @@ export default function MobileNav({ isAuthenticated = false, userName }: MobileN
         }`}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 border-b border-gray-200">
+        <div className="bg-gradient-to-r from-[#F4F2EC] to-[#EAE6D9] p-6 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-serif text-gray-900">Menu</h2>
             <button
@@ -105,7 +105,7 @@ export default function MobileNav({ isAuthenticated = false, userName }: MobileN
           {/* User Info */}
           {isAuthenticated && userName && (
             <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#9A7B4F] to-[#7A2E2E] rounded-full flex items-center justify-center text-white font-semibold">
                 {userName.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">

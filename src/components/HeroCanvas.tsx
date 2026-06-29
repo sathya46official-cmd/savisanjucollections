@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { Menu, X, ShoppingBag } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
@@ -15,6 +16,7 @@ export default function HeroCanvas() {
     const [isLoaded, setIsLoaded] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [isLowPerformance, setIsLowPerformance] = useState(false);
+    const [menuOpen, setMenuOpen] = useState(false);
 
     // Detect mobile and performance
     useEffect(() => {
@@ -123,9 +125,14 @@ export default function HeroCanvas() {
             };
 
             // Initial render
+            let currentFrame = 0;
             render(0);
 
-            const scrubValue = isLowPerformance ? 2 : 1;
+            // A small scrub smooths the link between scroll position and frame
+            // without the lag that a large value introduces. Frame skipping is
+            // removed because it was the main cause of the visible stutter —
+            // canvas drawImage is cheap enough to run every update.
+            const scrubValue = isLowPerformance ? 0.8 : 0.5;
             const pinDuration = isMobile ? "+=80%" : "+=100%";
 
             const trigger = ScrollTrigger.create({
@@ -134,20 +141,33 @@ export default function HeroCanvas() {
                 end: pinDuration,
                 pin: true,
                 scrub: scrubValue,
+                anticipatePin: 1,
+                fastScrollEnd: true,
+                invalidateOnRefresh: true,
                 onUpdate: (self) => {
-                    const frameSkip = isLowPerformance ? 2 : 1;
                     const frameIndex = Math.round(self.progress * (images.length - 1));
-                    
-                    if (frameIndex % frameSkip === 0 || frameIndex === images.length - 1) {
-                        render(frameIndex);
+                    if (frameIndex !== currentFrame) {
+                        currentFrame = frameIndex;
+                        // Schedule the draw on the next frame to avoid layout thrash.
+                        requestAnimationFrame(() => render(frameIndex));
                     }
                 },
             });
 
-            // Handle resizing
+            // Handle resizing — re-draw the current frame so the canvas never
+            // flashes blank after the width/height reset. Mobile browsers fire
+            // resize while scrolling (address bar show/hide); only react to
+            // width changes so we don't re-trigger pin maths mid-scroll.
+            let lastWidth = window.innerWidth;
             const handleResize = () => {
-                canvas.width = window.innerWidth;
+                const w = window.innerWidth;
+                canvas.width = w;
                 canvas.height = window.innerHeight;
+                render(currentFrame);
+                if (w !== lastWidth) {
+                    lastWidth = w;
+                    ScrollTrigger.refresh();
+                }
             };
 
             window.addEventListener('resize', handleResize);
@@ -179,7 +199,77 @@ export default function HeroCanvas() {
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
                     </Link>
                 </nav>
+
+                {/* Mobile menu trigger */}
+                <button
+                    type="button"
+                    onClick={() => setMenuOpen(true)}
+                    aria-label="Open menu"
+                    aria-expanded={menuOpen}
+                    className="md:hidden p-2 -mr-2 text-white drop-shadow-md"
+                >
+                    <Menu size={26} strokeWidth={1.5} />
+                </button>
             </header>
+
+            {/* Mobile full-screen nav overlay (landing) */}
+            <div
+                className={`fixed inset-0 z-[70] md:hidden transition-all duration-500 ${
+                    menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                }`}
+            >
+                <div className="absolute inset-0 bg-[#1A1A1A]/97 backdrop-blur-sm" />
+                <div className="relative flex h-full flex-col">
+                    <div className="flex items-center justify-between px-8 py-8">
+                        <span className="text-2xl font-serif uppercase tracking-widest text-[#F4F2EC]">
+                            SaviSanju
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => setMenuOpen(false)}
+                            aria-label="Close menu"
+                            className="p-2 -mr-2 text-[#F4F2EC]"
+                        >
+                            <X size={28} strokeWidth={1.5} />
+                        </button>
+                    </div>
+
+                    <nav className="flex flex-1 flex-col justify-center gap-2 px-8">
+                        <a
+                            href="#collections"
+                            onClick={() => setMenuOpen(false)}
+                            className="border-b border-white/10 py-5 font-serif text-3xl text-[#F4F2EC] transition-colors hover:text-[#C9A227]"
+                        >
+                            Collections
+                        </a>
+                        <Link
+                            href="/shop"
+                            onClick={() => setMenuOpen(false)}
+                            className="border-b border-white/10 py-5 font-serif text-3xl text-[#F4F2EC] transition-colors hover:text-[#C9A227]"
+                        >
+                            Sarees
+                        </Link>
+                        <Link
+                            href="/auth"
+                            onClick={() => setMenuOpen(false)}
+                            className="border-b border-white/10 py-5 font-serif text-3xl text-[#F4F2EC] transition-colors hover:text-[#C9A227]"
+                        >
+                            Account
+                        </Link>
+                        <Link
+                            href="/orders"
+                            onClick={() => setMenuOpen(false)}
+                            className="flex items-center gap-3 py-5 font-serif text-3xl text-[#F4F2EC] transition-colors hover:text-[#C9A227]"
+                        >
+                            <ShoppingBag size={26} strokeWidth={1.5} /> Orders
+                        </Link>
+                    </nav>
+
+                    <p className="px-8 py-10 text-xs uppercase tracking-[0.3em] text-white/40">
+                        Handwoven Luxury Sarees
+                    </p>
+                </div>
+            </div>
 
             {/* Overlay Typography */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 bg-black/30">

@@ -95,3 +95,27 @@ select {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ── Product card entrance (shop grid) ── */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes card-in {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .card-in {
+    opacity: 0;
+    animation: card-in 0.5s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+  }
+}
+/* Respect users who prefer reduced motion: show instantly, no transform. */
+@media (prefers-reduced-motion: reduce) {
+  .card-in {
+    opacity: 1;
+  }
+}

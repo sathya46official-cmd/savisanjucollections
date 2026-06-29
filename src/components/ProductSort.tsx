@@ -50,10 +50,10 @@ export default function ProductSort({ currentSort, onSortChange, resultCount }: 
   };
 
   return (
-    <div className="flex items-center justify-between py-4 px-6 bg-white border-b border-gray-200">
+    <div className="flex items-center justify-between py-3 px-6 bg-[#FAF9F6] border-b border-[#EAE6D9]">
       {/* Result Count */}
-      <div className="text-sm text-gray-600">
-        <span className="font-medium text-gray-900">{resultCount}</span> {resultCount === 1 ? 'Product' : 'Products'}
+      <div className="text-sm text-[#5C584E]">
+        <span className="font-medium text-[#1A1A1A]">{resultCount}</span> {resultCount === 1 ? 'Product' : 'Products'}
       </div>
 
       {/* Sort Dropdown */}

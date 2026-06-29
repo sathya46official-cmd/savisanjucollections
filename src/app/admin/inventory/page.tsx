@@ -238,7 +238,7 @@ export default function InventoryPage() {
                     });
                     setShowProductForm(true);
                   }}
-                  className="text-blue-600 hover:text-blue-800"
+                  className="text-[#9A7B4F] hover:text-[#1A1A1A]"
                 >
                   <Edit size={18} />
                 </button>
@@ -299,7 +299,7 @@ export default function InventoryPage() {
                 setShowVariantForm(true);
                 setVariantForm({ color: "", hex_code: "#000000", size: "", price: "", quantity: 0, is_negotiable: false });
               }}
-              className="w-full text-sm text-blue-600 hover:text-blue-800 font-medium"
+              className="w-full text-sm text-[#9A7B4F] hover:text-[#1A1A1A] font-medium"
             >
               + Add Variant
             </button>
@@ -419,17 +419,32 @@ export default function InventoryPage() {
               Adding variant to <span className="font-medium text-gray-900">{selectedProduct.name}</span>
             </p>
             <form onSubmit={handleCreateVariant} className="space-y-5">
+              {/* Colour: pick a named swatch (auto-fills name + hex). */}
+              <ColorPicker
+                value={variantForm.hex_code}
+                colorName={variantForm.color}
+                onChange={(hex, name) =>
+                  setVariantForm({ ...variantForm, hex_code: hex, color: name })
+                }
+                label="Colour *"
+              />
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Color Name *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Colour Name *
+                  </label>
                   <input
                     type="text"
                     value={variantForm.color}
                     onChange={(e) => setVariantForm({ ...variantForm, color: e.target.value })}
                     required
-                    placeholder="e.g. Royal Blue"
+                    placeholder="Select a swatch above"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none bg-white"
                   />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Auto-filled when you pick a swatch. You can rename it.
+                  </p>
                 </div>
 
                 <div>
@@ -443,12 +458,6 @@ export default function InventoryPage() {
                   />
                 </div>
               </div>
-
-              <ColorPicker
-                value={variantForm.hex_code}
-                onChange={(hex) => setVariantForm({ ...variantForm, hex_code: hex })}
-                label="Colour *"
-              />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>

@@ -284,7 +284,7 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
-          <div className="p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-purple-50 to-blue-50">
+          <div className="p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-[#F4F2EC] to-[#EAE6D9]">
             <div>
               <h1 className="text-3xl font-serif text-gray-900 mb-1">Admin Dashboard</h1>
               <p className="text-sm text-gray-600">Manage orders and customer requests</p>

@@ -6,7 +6,7 @@ import { resolveImageUrl, handleImageError } from "@/lib/images";
 import CheckoutModal from "./CheckoutModal";
 import ProductFilters from "./ProductFilters";
 import ProductSort, { SortOption } from "./ProductSort";
-import { Heart, ShoppingBag, Filter, X } from "lucide-react";
+import { Heart, ShoppingBag, Filter, X, Search } from "lucide-react";
 
 interface ShopVariant {
     id: string;
@@ -38,7 +38,10 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
     
     // Sort State
     const [sortBy, setSortBy] = useState<SortOption>('relevance');
-    
+
+    // Search State (client-side, in-memory filter only — never rendered as HTML)
+    const [searchQuery, setSearchQuery] = useState("");
+
     // Mobile Filter State
     const [showMobileFilters, setShowMobileFilters] = useState(false);
     
@@ -151,7 +154,18 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
 
     // Filter and sort variants
     const filteredAndSortedVariants = useMemo(() => {
+        // Sanitise the query: lowercase, trim, cap length, strip angle brackets.
+        // This value is only ever used for in-memory string matching (never
+        // injected into the DOM as HTML), so this is purely defensive.
+        const q = searchQuery.toLowerCase().replace(/[<>]/g, "").trim().slice(0, 80);
+
         const filtered = variants.filter(v => {
+            // Search filter (product name + colour name + fabric)
+            if (q) {
+                const haystack = `${v.product?.name ?? ""} ${v.product_name ?? ""} ${v.color_name ?? ""} ${v.color ?? ""} ${v.fabric ?? ""}`.toLowerCase();
+                if (!haystack.includes(q)) return false;
+            }
+
             // Price filter
             if ((v.price ?? 0) < priceRange[0] || (v.price ?? 0) > priceRange[1]) return false;
             
@@ -190,7 +204,7 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
         }
 
         return filtered;
-    }, [variants, priceRange, selectedFabrics, selectedColors, showOutOfStock, sortBy]);
+    }, [variants, priceRange, selectedFabrics, selectedColors, showOutOfStock, sortBy, searchQuery]);
 
     // Count active filters
     const activeFilterCount = useMemo(() => {
@@ -291,8 +305,42 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
 
                 {/* Products Section */}
                 <div className="flex-1 flex flex-col">
-                    {/* Sort Bar */}
-                    <div className="sticky top-20 md:top-24 z-30 bg-[#FAF9F6] border-b border-gray-200">
+                    {/* Search + Sort Bar */}
+                    <div className="sticky top-20 md:top-24 z-30 bg-[#FAF9F6] border-b border-[#EAE6D9]">
+                        {/* Search */}
+                        <div className="px-6 pt-4 pb-1">
+                            <label htmlFor="shop-search" className="sr-only">
+                                Search sarees by name, colour or fabric
+                            </label>
+                            <div className="relative max-w-xl">
+                                <Search
+                                    size={18}
+                                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8C8776] pointer-events-none"
+                                />
+                                <input
+                                    id="shop-search"
+                                    type="text"
+                                    inputMode="search"
+                                    autoComplete="off"
+                                    spellCheck={false}
+                                    maxLength={80}
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search sarees — try “Kanjivaram”, “maroon”, “silk”…"
+                                    className="w-full rounded-full border border-[#E0DBCD] bg-white py-3 pl-11 pr-10 text-sm text-[#1A1A1A] placeholder:text-[#A8A294] outline-none transition-colors focus:border-[#9A7B4F] focus:ring-2 focus:ring-[#9A7B4F]/30"
+                                />
+                                {searchQuery && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearchQuery("")}
+                                        aria-label="Clear search"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-[#8C8776] hover:bg-[#F4F2EC] hover:text-[#1A1A1A]"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                         <ProductSort
                             currentSort={sortBy}
                             onSortChange={setSortBy}
@@ -314,17 +362,21 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
                             </div>
                         ) : filteredAndSortedVariants.length === 0 ? (
                             <div className="text-center py-20">
-                                <p className="text-gray-500 text-lg mb-4">No products found</p>
+                                <p className="text-[#5C584E] text-lg mb-4">
+                                    {searchQuery
+                                        ? `No sarees match “${searchQuery.replace(/[<>]/g, "").slice(0, 40)}”.`
+                                        : "No products found"}
+                                </p>
                                 <button
-                                    onClick={handleClearAllFilters}
-                                    className="text-blue-600 hover:text-blue-800 font-medium"
+                                    onClick={() => { handleClearAllFilters(); setSearchQuery(""); }}
+                                    className="font-medium text-[#9A7B4F] hover:text-[#1A1A1A] underline-offset-4 hover:underline"
                                 >
-                                    Clear all filters
+                                    Clear search & filters
                                 </button>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                {filteredAndSortedVariants.map((variant) => {
+                            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                                {filteredAndSortedVariants.map((variant, index) => {
                                     const displayPrice = variant.price ? variant.price.toLocaleString('en-IN') : 'Price on Request';
                                     const isNegotiable = variant.is_negotiable;
 
@@ -332,7 +384,8 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
                                         <a 
                                             href={`/shop/${variant.product_id}/${variant.id}`} 
                                             key={variant.id} 
-                                            className="group relative bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden"
+                                            style={{ animationDelay: `${Math.min(index, 12) * 45}ms` }}
+                                            className="card-in group relative bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden"
                                         >
                                             {/* Image Container */}
                                             <div className="w-full aspect-[3/4] overflow-hidden bg-gray-100 relative">
@@ -374,8 +427,8 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
                                             </div>
 
                                             {/* Product Details */}
-                                            <div className="p-4">
-                                                <h3 className="text-gray-900 font-medium text-sm mb-1 line-clamp-2">
+                                            <div className="p-3 sm:p-4">
+                                                <h3 className="text-[#1A1A1A] font-serif text-sm sm:text-base mb-1 line-clamp-2 leading-snug">
                                                     {variant.color_name} {variant.product?.name || categoryName}
                                                 </h3>
                                                 
@@ -384,15 +437,15 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
                                                         className="w-4 h-4 rounded-full border border-gray-300"
                                                         style={{ backgroundColor: variant.hex_code }}
                                                     />
-                                                    <span className="text-xs text-gray-500">{variant.fabric}</span>
+                                                    <span className="text-xs text-[#8C8776] uppercase tracking-wide">{variant.fabric}</span>
                                                 </div>
                                                 
                                                 <div className="flex items-center justify-between">
-                                                    <div className="text-gray-900 font-semibold">
+                                                    <div className="text-[#1A1A1A] font-semibold">
                                                         ₹{displayPrice}
                                                     </div>
                                                     {isNegotiable && variant.price && (
-                                                        <span className="text-xs text-green-600">Negotiable</span>
+                                                        <span className="text-xs text-[#1F6F54]">Negotiable</span>
                                                     )}
                                                 </div>
                                             </div>
