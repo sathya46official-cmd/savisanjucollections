@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { apiClient } from "@/lib/api/client";
 import { resolveImageUrl, handleImageError } from "@/lib/images";
+import { useWishlist } from "@/hooks/useWishlist";
 import CheckoutModal from "./CheckoutModal";
 import ProductFilters from "./ProductFilters";
 import ProductSort, { SortOption } from "./ProductSort";
@@ -48,6 +49,9 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
     // Checkout Modal State
     const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
     const [selectedVariantForCheckout, setSelectedVariantForCheckout] = useState<ShopVariant | null>(null);
+
+    // Wishlist (localStorage-backed)
+    const { isWishlisted, toggle: toggleWishlist } = useWishlist();
 
     useEffect(() => {
         const fetchVariants = async () => {
@@ -224,7 +228,24 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
         setShowOutOfStock(true);
     };
 
-    if (loading) return null;
+    if (loading) {
+        return (
+            <div className="max-w-[1800px] mx-auto px-6 py-8" aria-busy="true" aria-label="Loading sarees">
+                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <div key={i} className="overflow-hidden rounded-lg bg-white shadow-sm">
+                            <div className="aspect-[3/4] w-full animate-pulse bg-[#EAE6D9]" />
+                            <div className="space-y-2 p-3 sm:p-4">
+                                <div className="h-4 w-3/4 animate-pulse rounded bg-[#EAE6D9]" />
+                                <div className="h-3 w-1/2 animate-pulse rounded bg-[#F0EBDD]" />
+                                <div className="h-4 w-1/3 animate-pulse rounded bg-[#EAE6D9]" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <>
@@ -414,8 +435,22 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
                                                 )}
                                                 
                                                 {/* Wishlist Button */}
-                                                <button className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors">
-                                                    <Heart size={18} className="text-gray-700" strokeWidth={1.5} />
+                                                <button
+                                                    type="button"
+                                                    aria-label={isWishlisted(variant.id) ? "Remove from wishlist" : "Add to wishlist"}
+                                                    aria-pressed={isWishlisted(variant.id)}
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        toggleWishlist(variant.id);
+                                                    }}
+                                                    className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors"
+                                                >
+                                                    <Heart
+                                                        size={18}
+                                                        strokeWidth={1.5}
+                                                        className={isWishlisted(variant.id) ? "text-[#9B1C2E] fill-[#9B1C2E]" : "text-gray-700"}
+                                                    />
                                                 </button>
 
                                                 {/* Limited Edition Badge */}

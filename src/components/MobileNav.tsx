@@ -58,7 +58,7 @@ export default function MobileNav({ isAuthenticated = false, userName }: MobileN
     { href: '/shop', label: 'Shop', icon: ShoppingBag },
     ...(isAuthenticated ? [
       { href: '/orders', label: 'My Orders', icon: Package },
-      { href: '/account', label: 'Account', icon: User }
+      { href: '/auth', label: 'Account', icon: User }
     ] : [])
   ];
 
