@@ -53,6 +53,13 @@ export default function ShopGridClient({ categoryId, categoryName }: { categoryI
     // Wishlist (localStorage-backed)
     const { isWishlisted, toggle: toggleWishlist } = useWishlist();
 
+    // Pre-fill the search box from a ?q= URL param (powers the Google
+    // sitelinks SearchAction and shareable search links). Client-only.
+    useEffect(() => {
+        const q = new URLSearchParams(window.location.search).get("q");
+        if (q) setSearchQuery(q.slice(0, 80));
+    }, []);
+
     useEffect(() => {
         const fetchVariants = async () => {
             setLoading(true);
